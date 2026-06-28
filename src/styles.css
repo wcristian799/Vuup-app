@@ -1,0 +1,207 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-neon: var(--neon);
+  --color-neon-glow: var(--neon-glow);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-electric: var(--electric);
+  --color-electric-deep: var(--electric-deep);
+  --color-danger: var(--danger);
+  --color-danger-glow: var(--danger-glow);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-ice: var(--ice);
+
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  --radius: 1rem;
+
+  /* Deep urban black canvas */
+  --background: oklch(0.13 0.015 260);
+  --foreground: oklch(0.98 0.005 240);
+
+  --surface: oklch(0.17 0.018 260);
+  --surface-2: oklch(0.21 0.022 262);
+  --surface-3: oklch(0.26 0.026 262);
+
+  --card: oklch(0.18 0.02 260);
+  --card-foreground: oklch(0.98 0.005 240);
+  --popover: oklch(0.18 0.02 260);
+  --popover-foreground: oklch(0.98 0.005 240);
+
+  /* VUUP electric blue — signature */
+  --primary: oklch(0.68 0.21 248);
+  --primary-foreground: oklch(0.12 0.02 260);
+  --electric: oklch(0.72 0.22 246);
+  --electric-deep: oklch(0.46 0.24 262);
+
+  /* Neon green for earnings / economy */
+  --neon: oklch(0.86 0.24 148);
+  --neon-glow: oklch(0.92 0.22 152);
+
+  /* Gold for founder / passive income */
+  --gold: oklch(0.84 0.16 88);
+  --gold-soft: oklch(0.74 0.12 82);
+
+  /* Danger pulse for safety */
+  --danger: oklch(0.66 0.26 22);
+  --danger-glow: oklch(0.74 0.28 22);
+
+  --ice: oklch(0.97 0.01 240);
+
+  --secondary: oklch(0.24 0.022 260);
+  --secondary-foreground: oklch(0.98 0.005 240);
+  --muted: oklch(0.22 0.02 260);
+  --muted-foreground: oklch(0.66 0.02 250);
+  --accent: oklch(0.28 0.04 260);
+  --accent-foreground: oklch(0.98 0.005 240);
+  --destructive: oklch(0.66 0.26 22);
+  --destructive-foreground: oklch(0.98 0.005 240);
+
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.68 0.21 248);
+
+  --shadow-pop: 0 30px 80px -30px color-mix(in oklab, var(--electric) 50%, transparent);
+  --shadow-card: 0 1px 0 0 oklch(1 0 0 / 6%) inset, 0 20px 50px -25px oklch(0 0 0 / 70%);
+  --gradient-electric: linear-gradient(135deg, oklch(0.72 0.22 246), oklch(0.46 0.24 262));
+  --gradient-neon: linear-gradient(135deg, oklch(0.86 0.24 148), oklch(0.74 0.2 168));
+  --gradient-gold: linear-gradient(135deg, oklch(0.88 0.16 92), oklch(0.7 0.14 70));
+  --gradient-danger: linear-gradient(135deg, oklch(0.74 0.28 22), oklch(0.5 0.24 18));
+  --gradient-canvas: radial-gradient(ellipse at 20% 0%, oklch(0.22 0.06 262) 0%, oklch(0.11 0.012 260) 55%);
+}
+
+.dark {
+  --background: oklch(0.13 0.015 260);
+  --foreground: oklch(0.98 0.005 240);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html, body { background: var(--background); color: var(--foreground); }
+  body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+  ::selection { background: color-mix(in oklab, var(--electric) 40%, transparent); color: white; }
+}
+
+@layer utilities {
+  .font-display { font-family: var(--font-display); font-feature-settings: "ss01", "ss02"; }
+  .font-mono { font-family: var(--font-mono); }
+
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  .glass {
+    background: linear-gradient(180deg, oklch(1 0 0 / 6%), oklch(1 0 0 / 2%));
+    backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid oklch(1 0 0 / 8%);
+  }
+  .glass-strong {
+    background: linear-gradient(180deg, oklch(0.22 0.025 262 / 92%), oklch(0.16 0.02 260 / 92%));
+    backdrop-filter: blur(28px) saturate(160%);
+    border: 1px solid oklch(1 0 0 / 10%);
+  }
+
+  .text-gradient-electric {
+    background: var(--gradient-electric);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .text-gradient-gold {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .text-gradient-neon {
+    background: var(--gradient-neon);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  .glow-electric { box-shadow: 0 0 0 1px color-mix(in oklab, var(--electric) 50%, transparent), 0 10px 40px -8px color-mix(in oklab, var(--electric) 60%, transparent); }
+  .glow-neon { box-shadow: 0 0 0 1px color-mix(in oklab, var(--neon) 50%, transparent), 0 10px 40px -8px color-mix(in oklab, var(--neon) 50%, transparent); }
+  .glow-gold { box-shadow: 0 0 0 1px color-mix(in oklab, var(--gold) 50%, transparent), 0 10px 40px -8px color-mix(in oklab, var(--gold) 50%, transparent); }
+  .glow-danger { box-shadow: 0 0 0 1px color-mix(in oklab, var(--danger) 50%, transparent), 0 14px 48px -6px color-mix(in oklab, var(--danger) 70%, transparent); }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(oklch(1 0 0 / 3%) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(1 0 0 / 3%) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .noise {
+    background-image: radial-gradient(oklch(1 0 0 / 4%) 1px, transparent 1px);
+    background-size: 3px 3px;
+  }
+
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .scrollbar-none { scrollbar-width: none; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+@keyframes pulse-ring-slow {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(3); opacity: 0; }
+}
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes dash {
+  to { stroke-dashoffset: -200; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes danger-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--danger) 70%, transparent); }
+  50% { box-shadow: 0 0 0 22px color-mix(in oklab, var(--danger) 0%, transparent); }
+}
+
+.animate-pulse-ring { animation: pulse-ring 2.4s cubic-bezier(.2,.6,.2,1) infinite; }
+.animate-pulse-ring-slow { animation: pulse-ring-slow 3.2s cubic-bezier(.2,.6,.2,1) infinite; }
+.animate-float { animation: float-soft 5s ease-in-out infinite; }
+.animate-dash { stroke-dasharray: 8 10; animation: dash 4s linear infinite; }
+.animate-danger-pulse { animation: danger-pulse 1.4s ease-in-out infinite; }
+.shimmer {
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 14%), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2.4s linear infinite;
+}
