@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
 # VUUP — publica integration/all-waves e abre PR para main.
 # Uso: GITHUB_TOKEN=ghp_xxx bash PUBLISH.sh
+#   ou: TOKEN_GIT=ghp_xxx bash PUBLISH.sh   (nomes de secret da diretiva do board)
 set -euo pipefail
 
-REPO="wcristian799/Vuup-app"
+# Aceita o token sob qualquer um dos nomes usados no projeto/board.
+GITHUB_TOKEN="${GITHUB_TOKEN:-${TOKEN_GIT:-}}"
+
+# REPO_GIT (secret do board) pode trazer a URL completa; deriva owner/repo dela.
+if [ -n "${REPO_GIT:-}" ]; then
+  REPO="$(printf '%s' "$REPO_GIT" | sed -E 's#^https?://[^/]+/##; s#\.git$##')"
+else
+  REPO="wcristian799/Vuup-app"
+fi
 BRANCH="integration/all-waves"
 BASE="main"
 
-: "${GITHUB_TOKEN:?defina GITHUB_TOKEN com escopo repo}"
+: "${GITHUB_TOKEN:?defina GITHUB_TOKEN ou TOKEN_GIT com escopo repo}"
 
 echo "==> push ${BRANCH} (idempotente)"
 git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git" "${BRANCH}:${BRANCH}"
