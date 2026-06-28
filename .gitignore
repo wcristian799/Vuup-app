@@ -10,3 +10,4 @@ tsconfig.tsbuildinfo
 # Server SQLite database
 server/data/
 *.db
+vuup-integration-all-waves.bundle
