@@ -1,25 +1,94 @@
 import * as React from "react";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import L from "leaflet";
 import { MapPin, Navigation, Search, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/api/client";
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+// ─── Fix Leaflet default icon paths broken by bundlers ────────────────────────
+
+// @ts-expect-error — Leaflet private property needed to override default icon URLs
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconUrl: new URL("leaflet/dist/images/marker-icon.png", import.meta.url).href,
+  iconRetinaUrl: new URL("leaflet/dist/images/marker-icon-2x.png", import.meta.url).href,
+  shadowUrl: new URL("leaflet/dist/images/marker-shadow.png", import.meta.url).href,
+});
+
+// ─── Custom driver icon ────────────────────────────────────────────────────────
+
+const DRIVER_ICON_HTML = `
+  <div style="
+    width:40px;height:40px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:oklch(0.10 0.015 260);
+    border:2px solid oklch(0.72 0.22 246);
+    box-shadow:0 0 10px oklch(0.72 0.22 246 / 0.5);
+  ">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="oklch(0.72 0.22 246)" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-2"/>
+      <circle cx="7" cy="17" r="2"/>
+      <circle cx="15" cy="17" r="2"/>
+    </svg>
+  </div>
+`;
+
+const driverIcon = L.divIcon({
+  html: DRIVER_ICON_HTML,
+  className: "",
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
+  popupAnchor: [0, -20],
+});
+
+// ─── User location icon ────────────────────────────────────────────────────────
+
+const USER_ICON_HTML = `
+  <div style="
+    width:24px;height:24px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:oklch(0.72 0.22 246);
+    box-shadow:0 0 12px oklch(0.72 0.22 246 / 0.7);
+  ">
+    <div style="width:8px;height:8px;border-radius:50%;background:white;"></div>
+  </div>
+`;
+
+const userIcon = L.divIcon({
+  html: USER_ICON_HTML,
+  className: "",
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
+
+// ─── Default coordinates (São Paulo downtown) ─────────────────────────────────
+
+const DEFAULT_POSITION: [number, number] = [-23.5505, -46.6333];
+
+// ─── Sub-component: re-center map when coords change ─────────────────────────
+
+function MapRecenter({ position }: { position: [number, number] }) {
+  const map = useMap();
+  React.useEffect(() => {
+    map.flyTo(position, map.getZoom(), { duration: 1.5 });
+  }, [map, position]);
+  return null;
+}
+
+// ─── Floating cost bubbles (kept from original design) ────────────────────────
 
 interface RideCostBubble {
   id: string;
   label: string;
   price: string;
-  x: number; // % from left
-  y: number; // % from top
+  x: number;
+  y: number;
   color: "electric" | "neon" | "gold";
-}
-
-interface VehicleMarker {
-  id: string;
-  name: string;
-  x: string; // % position
-  y: string;
-  active: boolean;
 }
 
 const RIDE_BUBBLES: RideCostBubble[] = [
@@ -29,158 +98,12 @@ const RIDE_BUBBLES: RideCostBubble[] = [
   { id: "b4", label: "Programada", price: "R$ 18", x: 20, y: 62, color: "gold" },
 ];
 
-const VEHICLE_MARKERS: VehicleMarker[] = [
-  { id: "v1", name: "Motorista Carlos", x: "35%", y: "42%", active: true },
-  { id: "v2", name: "Motorista Ana", x: "55%", y: "30%", active: false },
-  { id: "v3", name: "Motorista Paulo", x: "22%", y: "55%", active: true },
-  { id: "v4", name: "Motorista Lima", x: "70%", y: "48%", active: false },
-  { id: "v5", name: "Motorista Faria", x: "45%", y: "68%", active: false },
-];
-
 const BUBBLE_COLORS = {
   electric:
     "border-electric/60 bg-surface-2 text-electric [box-shadow:0_0_8px_oklch(0.72_0.22_246/0.3)]",
   neon: "border-neon/60 bg-surface-2 text-neon [box-shadow:0_0_8px_oklch(0.86_0.24_148/0.3)]",
   gold: "border-gold/60 bg-surface-2 text-gold [box-shadow:0_0_8px_oklch(0.84_0.16_88/0.3)]",
 };
-
-// ─── Animated map placeholder ─────────────────────────────────────────────────
-
-function MapPlaceholder() {
-  return (
-    <div
-      className="absolute inset-0 overflow-hidden"
-      role="img"
-      aria-label="Mapa da região atual com motoristas disponíveis"
-    >
-      {/* Dark map base */}
-      <div className="absolute inset-0 bg-[oklch(0.10_0.015_260)]" />
-
-      {/* Grid lines simulating map tiles */}
-      <svg
-        className="absolute inset-0 h-full w-full opacity-20"
-        aria-hidden="true"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path
-              d="M 40 0 L 0 0 0 40"
-              fill="none"
-              stroke="oklch(0.28 0.025 262)"
-              strokeWidth="1"
-            />
-          </pattern>
-          {/* Main roads */}
-          <pattern id="roads" width="160" height="160" patternUnits="userSpaceOnUse">
-            <path d="M 80 0 L 80 160" fill="none" stroke="oklch(0.35 0.02 262)" strokeWidth="2" />
-            <path d="M 0 80 L 160 80" fill="none" stroke="oklch(0.35 0.02 262)" strokeWidth="2" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
-        <rect width="100%" height="100%" fill="url(#roads)" />
-        {/* Curved "avenue" overlays */}
-        <path
-          d="M -20 180 Q 120 120 250 160 Q 360 200 480 140"
-          fill="none"
-          stroke="oklch(0.40 0.02 262)"
-          strokeWidth="3"
-          opacity="0.6"
-        />
-        <path
-          d="M 20 60 Q 180 30 320 80 Q 420 110 500 60"
-          fill="none"
-          stroke="oklch(0.38 0.02 262)"
-          strokeWidth="2.5"
-          opacity="0.5"
-        />
-      </svg>
-
-      {/* Subtle demand heatmap blobs */}
-      <div
-        className="absolute rounded-full opacity-15"
-        aria-hidden="true"
-        style={{
-          width: 200,
-          height: 200,
-          top: "20%",
-          left: "30%",
-          background:
-            "radial-gradient(circle, oklch(0.65 0.24 22 / 0.6) 0%, oklch(0.65 0.24 22 / 0) 70%)",
-          transform: "translate(-50%, -50%)",
-        }}
-      />
-      <div
-        className="absolute rounded-full opacity-20"
-        aria-hidden="true"
-        style={{
-          width: 140,
-          height: 140,
-          top: "65%",
-          left: "72%",
-          background:
-            "radial-gradient(circle, oklch(0.72 0.22 246 / 0.5) 0%, oklch(0.72 0.22 246 / 0) 70%)",
-          transform: "translate(-50%, -50%)",
-        }}
-      />
-
-      {/* Vehicle markers per spec: 40×40px, electric border on active, pulse animation */}
-      {VEHICLE_MARKERS.map((vehicle, i) => (
-        <button
-          key={vehicle.id}
-          className={cn(
-            "absolute flex items-center justify-center rounded-full",
-            "h-10 w-10 border-2 bg-surface-2",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            "transition-colors",
-          )}
-          style={{
-            left: vehicle.x,
-            top: vehicle.y,
-            transform: "translate(-50%, -50%)",
-            borderColor: vehicle.active ? "oklch(0.72 0.22 246)" : "oklch(0.26 0.026 262)",
-            animation: vehicle.active ? `vehicle-pulse 2000ms ease-in-out infinite` : undefined,
-            animationDelay: vehicle.active ? `${i * 400}ms` : undefined,
-          }}
-          aria-label={`Motorista ativo — ${vehicle.name}`}
-          role="button"
-        >
-          {/* Vehicle icon */}
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-            stroke={vehicle.active ? "oklch(0.72 0.22 246)" : "oklch(0.62 0.02 250)"}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-2" />
-            <circle cx="7" cy="17" r="2" />
-            <circle cx="15" cy="17" r="2" />
-          </svg>
-        </button>
-      ))}
-
-      {/* User location pin */}
-      <div
-        className="absolute"
-        aria-hidden="true"
-        style={{ left: "50%", top: "52%", transform: "translate(-50%, -100%)" }}
-      >
-        {/* Pulsing ring */}
-        <div className="absolute inset-0 rounded-full bg-electric/30 animate-ping" />
-        <div className="relative flex h-6 w-6 items-center justify-center rounded-full bg-electric shadow-[0_0_12px_oklch(0.72_0.22_246/0.7)]">
-          <div className="h-2 w-2 rounded-full bg-white" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Floating cost bubbles ────────────────────────────────────────────────────
 
 function CostBubble({ bubble }: { bubble: RideCostBubble }) {
   return (
@@ -202,7 +125,7 @@ function CostBubble({ bubble }: { bubble: RideCostBubble }) {
   );
 }
 
-// ─── Bottom search/action panel ────────────────────────────────────────────────
+// ─── Bottom search/action panel ───────────────────────────────────────────────
 
 interface BottomPanelProps {
   onSelectRide: () => void;
@@ -213,7 +136,7 @@ function BottomPanel({ onSelectRide }: BottomPanelProps) {
 
   return (
     <div
-      className="absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-border bg-card/90 backdrop-blur-md px-4 pt-3 pb-5"
+      className="absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-border bg-card/90 backdrop-blur-md px-4 pt-3 pb-5 z-[1000]"
       style={{ boxShadow: "0 -8px 32px oklch(0 0 0 / 0.5)" }}
     >
       {/* Drag handle */}
@@ -276,12 +199,20 @@ function BottomPanel({ onSelectRide }: BottomPanelProps) {
   );
 }
 
-// ─── FABs ─────────────────────────────────────────────────────────────────────
+// ─── FAB: re-center on user location ─────────────────────────────────────────
 
-function MapFABs() {
+interface MapFABsProps {
+  onRecenter: () => void;
+}
+
+function MapFABs({ onRecenter }: MapFABsProps) {
   return (
-    <div className="absolute right-3 top-1/4 flex flex-col gap-2" aria-label="Controles do mapa">
+    <div
+      className="absolute right-3 top-1/4 flex flex-col gap-2 z-[1000]"
+      aria-label="Controles do mapa"
+    >
       <button
+        onClick={onRecenter}
         className={cn(
           "flex h-12 w-12 items-center justify-center rounded-full",
           "border border-border bg-surface-2 text-electric",
@@ -304,13 +235,92 @@ interface MapaVivoProps {
 }
 
 export function MapaVivo({ onSelectRide }: MapaVivoProps) {
+  const [userPosition, setUserPosition] = React.useState<[number, number] | null>(null);
+  const [mapCenter, setMapCenter] = React.useState<[number, number]>(DEFAULT_POSITION);
+  const [recenterTrigger, setRecenterTrigger] = React.useState(0);
+
+  // Geolocation: request once on mount, fallback to default if denied/unavailable
+  React.useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+        setUserPosition(coords);
+        setMapCenter(coords);
+      },
+      () => {
+        // Permission denied or unavailable — use default (São Paulo)
+        setMapCenter(DEFAULT_POSITION);
+      },
+      { timeout: 8000, maximumAge: 60_000 },
+    );
+  }, []);
+
+  // Fetch nearby drivers from API (auto-refreshes every 30s)
+  const { data: driversData } = useQuery({
+    queryKey: ["nearby-drivers"],
+    queryFn: () => apiClient.rides.nearbyDrivers(),
+    refetchInterval: 30_000,
+    retry: 1,
+  });
+
+  const drivers = driversData?.drivers ?? [];
+
+  function handleRecenter() {
+    if (userPosition) {
+      setMapCenter(userPosition);
+      setRecenterTrigger((t) => t + 1);
+    }
+  }
+
   return (
     <div className="relative h-full w-full overflow-hidden">
-      {/* Full-bleed map */}
-      <MapPlaceholder />
+      {/* Leaflet map — full bleed */}
+      <MapContainer
+        center={mapCenter}
+        zoom={15}
+        style={{ height: "100%", width: "100%" }}
+        zoomControl={false}
+        attributionControl={false}
+        aria-label="Mapa da região atual com motoristas disponíveis"
+      >
+        {/* CARTO dark tile layer — no API key required */}
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          subdomains="abcd"
+          maxZoom={20}
+        />
 
-      {/* Floating ride cost bubbles */}
-      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        {/* Re-center animation when recenter is triggered */}
+        <MapRecenter
+          key={recenterTrigger}
+          position={recenterTrigger > 0 ? (userPosition ?? mapCenter) : mapCenter}
+        />
+
+        {/* User location marker */}
+        {userPosition && (
+          <Marker
+            position={userPosition}
+            icon={userIcon}
+            alt="Sua localização atual"
+          />
+        )}
+
+        {/* Nearby drivers from API */}
+        {drivers.map((driver) => (
+          <Marker
+            key={driver.id}
+            position={[driver.location.lat, driver.location.lng]}
+            icon={driverIcon}
+            alt={`Motorista ${driver.fullName}`}
+            title={`${driver.fullName} — ~${driver.estimatedArrivalMin} min`}
+          />
+        ))}
+      </MapContainer>
+
+      {/* Floating ride cost bubbles (overlay on top of map) */}
+      <div className="absolute inset-0 pointer-events-none z-[999]" aria-hidden="true">
         <div className="pointer-events-auto">
           {RIDE_BUBBLES.map((bubble) => (
             <CostBubble key={bubble.id} bubble={bubble} />
@@ -319,7 +329,7 @@ export function MapaVivo({ onSelectRide }: MapaVivoProps) {
       </div>
 
       {/* Map FABs */}
-      <MapFABs />
+      <MapFABs onRecenter={handleRecenter} />
 
       {/* Bottom action panel */}
       <BottomPanel onSelectRide={onSelectRide} />

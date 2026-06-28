@@ -1,9 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { RouterProvider, createRouter, redirect } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { routeTree } from "./routeTree.gen";
+import { loadPersistedAuth } from "./lib/auth";
+import "leaflet/dist/leaflet.css";
 import "./styles.css";
+
+// Rehydrate auth token from localStorage before the router boots
+loadPersistedAuth();
 
 // Create query client
 const queryClient = new QueryClient({
