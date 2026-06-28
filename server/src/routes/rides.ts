@@ -28,6 +28,7 @@ import {
 } from "../models/mock-data.js";
 import { calculateFare } from "../lib/pricing.js";
 import type { Modality } from "../models/schemas.js";
+import { openDisputaSession, resolveDisputa } from "../lib/matching.js";
 
 // ─── State machine: allowed transitions ──────────────────────────────────────
 //
@@ -53,27 +54,23 @@ ridesRouter.use("/*", requireAuth);
 
 // ─── POST /rides/fare-estimate ────────────────────────────────────────────────
 
-ridesRouter.post(
-  "/fare-estimate",
-  zValidator("json", FareEstimateRequestSchema),
-  (c) => {
-    const body = c.req.valid("json");
-    const coupon = body.couponCode ? findCouponByCode(body.couponCode) : undefined;
+ridesRouter.post("/fare-estimate", zValidator("json", FareEstimateRequestSchema), (c) => {
+  const body = c.req.valid("json");
+  const coupon = body.couponCode ? findCouponByCode(body.couponCode) : undefined;
 
-    if (body.couponCode && !coupon) {
-      return c.json({ code: "INVALID_COUPON", message: "Coupon not found or expired" }, 400);
-    }
+  if (body.couponCode && !coupon) {
+    return c.json({ code: "INVALID_COUPON", message: "Coupon not found or expired" }, 400);
+  }
 
-    const breakdown = calculateFare({
-      modality: body.modality,
-      origin: body.origin,
-      destination: body.destination,
-      coupon,
-    });
+  const breakdown = calculateFare({
+    modality: body.modality,
+    origin: body.origin,
+    destination: body.destination,
+    coupon,
+  });
 
-    return c.json({ fareBreakdown: breakdown });
-  },
-);
+  return c.json({ fareBreakdown: breakdown });
+});
 
 // ─── GET /rides/nearby-drivers ────────────────────────────────────────────────
 
@@ -104,7 +101,8 @@ ridesRouter.post("/", zValidator("json", RideRequestV2Schema), (c) => {
     throw new HTTPException(403, { message: "Only passengers can request rides" });
   }
 
-  const modality: Modality = (body.modality as Modality | undefined) ?? (body.routeType as Modality);
+  const modality: Modality =
+    (body.modality as Modality | undefined) ?? (body.routeType as Modality);
 
   const coupon = body.couponCode ? findCouponByCode(body.couponCode) : undefined;
   if (body.couponCode && !coupon) {
@@ -152,6 +150,15 @@ ridesRouter.post("/", zValidator("json", RideRequestV2Schema), (c) => {
   if (patronLink) {
     vipWindow = createVipWindow(rideId, patronLink.driverId);
   }
+
+  // Onda 3: open a Disputa de corrida session (up to 5 drivers, 15s window)
+  openDisputaSession(
+    rideId,
+    userId,
+    body.origin.lat,
+    body.origin.lng,
+    fareBreakdown.totalCents,
+  );
 
   return c.json(
     {
@@ -262,6 +269,9 @@ ridesRouter.patch(
     if (winIdx !== -1 && MOCK_VIP_WINDOWS[winIdx]!.outcome === "pending") {
       MOCK_VIP_WINDOWS[winIdx] = { ...MOCK_VIP_WINDOWS[winIdx]!, outcome: "expired" };
     }
+
+    // Onda 3: also cancel any open Disputa session
+    resolveDisputa(ride.id, "cancelled");
 
     return c.json(updated);
   },

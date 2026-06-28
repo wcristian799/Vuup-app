@@ -21,6 +21,7 @@ import { walletRouter } from "./routes/wallet.js";
 import { safetyRouter } from "./routes/safety.js";
 import { carpoolRouter } from "./routes/carpool.js";
 import { patronRouter } from "./routes/patron.js";
+import { matchingRouter } from "./routes/matching.js";
 
 const app = new Hono();
 
@@ -62,6 +63,7 @@ app.route("/wallet", walletRouter); // /wallet/*  — protected
 app.route("/safety", safetyRouter); // /safety/*  — protected
 app.route("/carpool", carpoolRouter); // /carpool/* — protected
 app.route("/patron", patronRouter); // /patron/*  — protected
+app.route("/matching", matchingRouter); // /matching/* — protected (Onda 3)
 
 // ─── 404 catch-all ───────────────────────────────────────────────────────────
 
@@ -80,39 +82,43 @@ app.onError((err, c) => {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-const PORT = Number(process.env["PORT"] ?? 3001);
+// Guard: do not bind the HTTP server when imported by test runners.
+// Vitest sets process.env.VITEST; the guard prevents EADDRINUSE in parallel test runs.
+if (!process.env["VITEST"]) {
+  const PORT = Number(process.env["PORT"] ?? 3001);
 
-serve({ fetch: app.fetch, port: PORT }, () => {
-  console.log(`VUUP API server running at http://localhost:${PORT}`);
-  console.log("Mode: MOCK (in-memory data, no database)");
-  console.log("Routes:");
-  console.log("  GET  /health");
-  console.log("  POST /auth/otp-request");
-  console.log("  POST /auth/login");
-  console.log("  POST /auth/refresh");
-  console.log("  GET  /users/me");
-  console.log("  POST /rides/fare-estimate");
-  console.log("  POST /rides");
-  console.log("  GET  /rides");
-  console.log("  GET  /rides/:id");
-  console.log("  PATCH /rides/:id/status");
-  console.log("  PATCH /rides/:id/cancel");
-  console.log("  GET  /rides/nearby-drivers");
-  console.log("  GET  /patron");
-  console.log("  POST /patron");
-  console.log("  PATCH /patron/:id");
-  console.log("  DELETE /patron/:id");
-  console.log("  GET  /patron/passengers");
-  console.log("  GET  /wallet");
-  console.log("  GET  /wallet/transactions");
-  console.log("  GET  /safety/events");
-  console.log("  POST /safety/events");
-  console.log("  POST /safety/events/:id/upvote");
-  console.log("  POST /safety/sos");
-  console.log("  GET  /carpool/routes");
-  console.log("  GET  /carpool/routes/:id");
-  console.log("  POST /carpool/routes");
-  console.log("  POST /carpool/routes/:id/join");
-});
+  serve({ fetch: app.fetch, port: PORT }, () => {
+    console.log(`VUUP API server running at http://localhost:${PORT}`);
+    console.log("Mode: MOCK (in-memory data, no database)");
+    console.log("Routes:");
+    console.log("  GET  /health");
+    console.log("  POST /auth/otp-request");
+    console.log("  POST /auth/login");
+    console.log("  POST /auth/refresh");
+    console.log("  GET  /users/me");
+    console.log("  POST /rides/fare-estimate");
+    console.log("  POST /rides");
+    console.log("  GET  /rides");
+    console.log("  GET  /rides/:id");
+    console.log("  PATCH /rides/:id/status");
+    console.log("  PATCH /rides/:id/cancel");
+    console.log("  GET  /rides/nearby-drivers");
+    console.log("  GET  /patron");
+    console.log("  POST /patron");
+    console.log("  PATCH /patron/:id");
+    console.log("  DELETE /patron/:id");
+    console.log("  GET  /patron/passengers");
+    console.log("  GET  /wallet");
+    console.log("  GET  /wallet/transactions");
+    console.log("  GET  /safety/events");
+    console.log("  POST /safety/events");
+    console.log("  POST /safety/events/:id/upvote");
+    console.log("  POST /safety/sos");
+    console.log("  GET  /carpool/routes");
+    console.log("  GET  /carpool/routes/:id");
+    console.log("  POST /carpool/routes");
+    console.log("  POST /carpool/routes/:id/join");
+  });
+}
 
 export default app;
