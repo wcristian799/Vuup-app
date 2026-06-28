@@ -1,10 +1,14 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Map as MapIcon, Layers, ShieldAlert, User, Wallet } from "lucide-react";
+import { AnimatePresence } from "motion/react";
 import { StatusBar } from "@/components/vuup/StatusBar";
 import { MapaVivo } from "@/components/vuup/MapaVivo";
 import { RideSelectorMatrix, type RideTypeKey } from "@/components/vuup/RideSelectorMatrix";
 import { SafetyCenter } from "@/components/vuup/SafetyCenter";
+import { ScreenTransition } from "@/components/vuup/ScreenTransition";
+import { DriverDashboard } from "@/components/vuup/DriverDashboard";
+import { EarningsCounter } from "@/components/vuup/EarningsCounter";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -21,21 +25,34 @@ const TABS: { key: Tab; label: string; icon: typeof MapIcon }[] = [
   { key: "shield", label: "Segurança", icon: ShieldAlert },
 ];
 
-// ─── Placeholder screens for non-VUU-4 tabs ──────────────────────────────────
+// ─── Wallet placeholder ───────────────────────────────────────────────────────
 
-function PlaceholderScreen({ label }: { label: string }) {
+function WalletPlaceholder() {
   return (
-    <div className="flex h-full items-center justify-center px-6">
+    <div className="flex h-full flex-col items-center justify-center gap-6 px-6">
       <div className="text-center">
-        <p className="text-muted-foreground text-sm">{label}</p>
-        <div className="mt-4">
-          <Link
-            to="/gallery"
-            className="inline-flex items-center gap-1.5 rounded-full border border-electric/40 bg-electric/10 px-4 py-2 text-sm text-electric hover:bg-electric/20 transition-colors"
-          >
-            Ver galeria de componentes →
-          </Link>
-        </div>
+        <p className="font-display font-bold text-lg text-foreground mb-1">Carteira VUUP</p>
+        <p className="text-sm text-muted-foreground">
+          Acompanhe seus ganhos acumulados em tempo real.
+        </p>
+      </div>
+
+      {/* Demo EarningsCounter */}
+      <div className="flex flex-col items-center gap-1">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          Saldo disponível
+        </p>
+        <EarningsCounter value={243750} size="hero" colorClass="text-neon" />
+        <p className="text-xs text-muted-foreground mt-1">Próximo pagamento em 2 dias</p>
+      </div>
+
+      <div className="mt-2">
+        <Link
+          to="/gallery"
+          className="inline-flex items-center gap-1.5 rounded-full border border-electric/40 bg-electric/10 px-4 py-2 text-sm text-electric hover:bg-electric/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          Ver galeria de componentes →
+        </Link>
       </div>
     </div>
   );
@@ -49,14 +66,11 @@ function VuupPassengerApp() {
   const [confirmedRide, setConfirmedRide] = React.useState<RideTypeKey | null>(null);
 
   const handleSelectRide = () => {
-    // Navigate to ride selector tab
     setActiveTab("matrix");
   };
 
   const handleConfirmRide = (rideType: RideTypeKey) => {
     setConfirmedRide(rideType);
-    // In a full app: kick off ride request flow
-    // For now, return to map tab to show the "ride requested" state
     setActiveTab("map");
   };
 
@@ -70,7 +84,13 @@ function VuupPassengerApp() {
 
       {/* Main content area */}
       <div className="absolute inset-0 pt-8 pb-20 overflow-hidden">
-        {/* Mapa Vivo — home screen */}
+        {/*
+         * Map and Matrix are always rendered (map needs Leaflet to stay mounted),
+         * so they use the original opacity-toggle approach.
+         * All other tabs use ScreenTransition for animated entrance/exit.
+         */}
+
+        {/* Mapa Vivo — always mounted, opacity-toggled */}
         <div
           className={cn(
             "absolute inset-0 pt-8 pb-20 transition-opacity duration-200",
@@ -83,7 +103,7 @@ function VuupPassengerApp() {
           <MapaVivo onSelectRide={handleSelectRide} />
         </div>
 
-        {/* Matrix Slider — ride type selector */}
+        {/* Matrix Slider — always mounted */}
         <div
           className={cn(
             "absolute inset-0 pt-8 pb-20 transition-opacity duration-200",
@@ -96,44 +116,30 @@ function VuupPassengerApp() {
           <RideSelectorMatrix onConfirm={handleConfirmRide} destination="Destino selecionado" />
         </div>
 
-        {/* Safety Center */}
-        <div
-          className={cn(
-            "absolute inset-0 pt-8 pb-20 transition-opacity duration-200",
-            activeTab === "shield"
-              ? "opacity-100 pointer-events-auto z-10"
-              : "opacity-0 pointer-events-none z-0",
+        {/* Animated tabs — rendered only when active, animated in/out */}
+        <AnimatePresence mode="wait" initial={false}>
+          {activeTab === "shield" && (
+            <ScreenTransition motionKey="shield">
+              <div className="absolute inset-0 pt-8 pb-20" aria-label="Centro de segurança">
+                <SafetyCenter />
+              </div>
+            </ScreenTransition>
           )}
-          aria-hidden={activeTab !== "shield"}
-        >
-          <SafetyCenter />
-        </div>
-
-        {/* Wallet placeholder */}
-        <div
-          className={cn(
-            "absolute inset-0 pt-8 pb-20 transition-opacity duration-200",
-            activeTab === "wallet"
-              ? "opacity-100 pointer-events-auto z-10"
-              : "opacity-0 pointer-events-none z-0",
+          {activeTab === "wallet" && (
+            <ScreenTransition motionKey="wallet">
+              <div className="absolute inset-0 pt-8 pb-20" aria-label="Carteira">
+                <WalletPlaceholder />
+              </div>
+            </ScreenTransition>
           )}
-          aria-hidden={activeTab !== "wallet"}
-        >
-          <PlaceholderScreen label="Carteira — em breve" />
-        </div>
-
-        {/* Profile placeholder */}
-        <div
-          className={cn(
-            "absolute inset-0 pt-8 pb-20 transition-opacity duration-200",
-            activeTab === "profile"
-              ? "opacity-100 pointer-events-auto z-10"
-              : "opacity-0 pointer-events-none z-0",
+          {activeTab === "profile" && (
+            <ScreenTransition motionKey="profile">
+              <div className="absolute inset-0 pt-8 pb-20 overflow-hidden" aria-label="Perfil do motorista">
+                <DriverDashboard isPatrono={true} tier="ouro" />
+              </div>
+            </ScreenTransition>
           )}
-          aria-hidden={activeTab !== "profile"}
-        >
-          <PlaceholderScreen label="Perfil — em breve" />
-        </div>
+        </AnimatePresence>
       </div>
 
       {/* Bottom tab bar */}

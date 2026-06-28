@@ -389,9 +389,12 @@ export const componentInventory = [
   { name: "PatronoCard", path: "src/components/vuup/PatronoCard.tsx", status: "specced" },
   { name: "ShieldStatus", path: "src/components/vuup/ShieldStatus.tsx", status: "specced" },
   { name: "ModeSliderCard", path: "src/components/vuup/ModeSliderCard.tsx", status: "specced" },
+  { name: "DriverDashboard", path: "src/components/vuup/DriverDashboard.tsx", status: "implemented" },
+  { name: "ScreenTransition", path: "src/components/vuup/ScreenTransition.tsx", status: "implemented" },
+  { name: "DisputeCounterOfferPanel", path: "src/components/vuup/DisputeCounterOfferPanel.tsx", status: "implemented" },
   // Layout
   { name: "AppShell", path: "src/routes/__root.tsx (pattern)", status: "implemented" },
-  { name: "StatusBar", path: "src/components/vuup/StatusBar.tsx", status: "specced" },
+  { name: "StatusBar", path: "src/components/vuup/StatusBar.tsx", status: "implemented" },
 ] as const;
 
 export type ComponentStatus = "implemented" | "pending" | "specced";
