@@ -1,46 +1,33 @@
 import * as React from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Map as MapIcon, Layers, ShieldAlert, User, Package } from "lucide-react";
-import { AnimatePresence } from "motion/react";
+import { createFileRoute, redirect, Link, useRouterState } from "@tanstack/react-router";
+import { Map as MapIcon, Layers, ShieldAlert, User, Wallet } from "lucide-react";
 import { StatusBar } from "@/components/vuup/StatusBar";
 import { MapaVivo } from "@/components/vuup/MapaVivo";
-import { RideSelectorMatrix, type RideTypeKey } from "@/components/vuup/RideSelectorMatrix";
-import { SafetyCenter } from "@/components/vuup/SafetyCenter";
-import { ScreenTransition } from "@/components/vuup/ScreenTransition";
-import { DriverDashboard } from "@/components/vuup/DriverDashboard";
-import { EntregasScreen } from "@/components/vuup/EntregasScreen";
+import { isAuthenticated } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   component: VuupPassengerApp,
+  beforeLoad: () => {
+    // Guard: redirect to /login if not authenticated
+    if (!isAuthenticated()) {
+      throw redirect({ to: "/login" });
+    }
+  },
 });
 
-type Tab = "map" | "matrix" | "entregas" | "profile" | "shield";
+// Bottom nav items — each links to a real route
+const NAV_ITEMS = [
+  { to: "/", label: "Início", icon: MapIcon },
+  { to: "/rides", label: "Corridas", icon: Layers },
+  { to: "/wallet", label: "Carteira", icon: Wallet },
+  { to: "/profile", label: "Perfil", icon: User },
+  { to: "/safety", label: "Segurança", icon: ShieldAlert },
+] as const;
 
-const TABS: { key: Tab; label: string; icon: typeof MapIcon }[] = [
-  { key: "map", label: "Início", icon: MapIcon },
-  { key: "matrix", label: "Corridas", icon: Layers },
-  { key: "entregas", label: "Entregas", icon: Package },
-  { key: "profile", label: "Perfil", icon: User },
-  { key: "shield", label: "Segurança", icon: ShieldAlert },
-];
-
-// ─── Main passenger app ───────────────────────────────────────────────────────
+// ─── Main passenger app (home/map screen) ─────────────────────────────────────
 
 function VuupPassengerApp() {
-  const [activeTab, setActiveTab] = React.useState<Tab>("map");
-  // When a ride type is confirmed from Matrix, we stash the selection here
-  const [confirmedRide, setConfirmedRide] = React.useState<RideTypeKey | null>(null);
-
-  const handleSelectRide = () => {
-    setActiveTab("matrix");
-  };
-
-  const handleConfirmRide = (rideType: RideTypeKey) => {
-    setConfirmedRide(rideType);
-    setActiveTab("map");
-  };
-
   return (
     <main
       className="relative mx-auto h-[100dvh] w-full max-w-[480px] overflow-hidden text-foreground"
@@ -115,69 +102,47 @@ function VuupPassengerApp() {
         </AnimatePresence>
       </div>
 
-      {/* Bottom tab bar */}
-      <nav
-        className="absolute bottom-0 inset-x-0 h-20 border-t border-border bg-card/80 backdrop-blur-sm"
-        aria-label="Navegação principal"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <ul className="flex h-full items-end pb-3">
-          {TABS.map(({ key, label, icon: Icon }) => {
-            const isActive = activeTab === key;
-            return (
-              <li key={key} className="flex-1 relative">
-                {isActive && <div className="tab-active-indicator" aria-hidden="true" />}
-                <button
-                  className={cn(
-                    "flex w-full flex-col items-center gap-1 py-1 transition-colors",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                    isActive ? "text-electric" : "text-muted-foreground hover:text-foreground",
-                  )}
-                  aria-label={label}
-                  aria-pressed={isActive}
-                  onClick={() => setActiveTab(key)}
-                >
-                  <Icon size={22} aria-hidden="true" />
-                  <span className="text-[10px] font-medium leading-none">{label}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-
-      {/* Ride confirmed toast (shown when back on map after confirming) */}
-      {confirmedRide && activeTab === "map" && (
-        <div
-          className={cn(
-            "absolute top-10 inset-x-4 z-50 rounded-2xl border border-neon/40 bg-surface-2 px-4 py-3",
-            "flex items-center gap-3 [box-shadow:0_0_16px_oklch(0.86_0.24_148/0.3)]",
-            "animate-in slide-in-from-top-2 duration-300",
-          )}
-          role="status"
-          aria-live="polite"
-          aria-label={`Corrida ${confirmedRide} confirmada`}
-        >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neon/20 shrink-0">
-            <span className="text-neon text-sm font-bold" aria-hidden="true">
-              ✓
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-neon">Corrida confirmada!</p>
-            <p className="text-xs text-muted-foreground capitalize truncate">
-              {confirmedRide.replace("-", " ")} · Procurando motorista...
-            </p>
-          </div>
-          <button
-            className="text-muted-foreground hover:text-foreground text-lg leading-none shrink-0 -mt-1"
-            onClick={() => setConfirmedRide(null)}
-            aria-label="Fechar notificação"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      {/* Bottom nav — real router Links */}
+      <BottomNav />
     </main>
+  );
+}
+
+// ─── Shared bottom nav ────────────────────────────────────────────────────────
+
+function BottomNav() {
+  const location = useRouterState({ select: (s) => s.location });
+  const pathname = location.pathname;
+
+  return (
+    <nav
+      className="absolute bottom-0 inset-x-0 h-20 border-t border-border bg-card/80 backdrop-blur-sm z-30"
+      aria-label="Navegação principal"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <ul className="flex h-full items-end pb-3">
+        {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
+          const isActive = pathname === to;
+          return (
+            <li key={to} className="flex-1 relative">
+              {isActive && <div className="tab-active-indicator" aria-hidden="true" />}
+              <Link
+                to={to}
+                className={cn(
+                  "flex w-full flex-col items-center gap-1 py-1 transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                  isActive ? "text-electric" : "text-muted-foreground hover:text-foreground",
+                )}
+                aria-label={label}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <Icon size={22} aria-hidden="true" />
+                <span className="text-[10px] font-medium leading-none">{label}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }

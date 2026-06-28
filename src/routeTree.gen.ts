@@ -10,12 +10,42 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WowRouteImport } from './routes/wow'
+import { Route as WalletRouteImport } from './routes/wallet'
+import { Route as SafetyRouteImport } from './routes/safety'
+import { Route as RidesRouteImport } from './routes/rides'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as IndexRouteImport } from './routes/index'
 
 const WowRoute = WowRouteImport.update({
   id: '/wow',
   path: '/wow',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WalletRoute = WalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SafetyRoute = SafetyRouteImport.update({
+  id: '/safety',
+  path: '/safety',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RidesRoute = RidesRouteImport.update({
+  id: '/rides',
+  path: '/rides',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleryRoute = GalleryRouteImport.update({
@@ -32,47 +62,127 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/gallery': typeof GalleryRoute
+  '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
+  '/rides': typeof RidesRoute
+  '/safety': typeof SafetyRoute
+  '/wallet': typeof WalletRoute
   '/wow': typeof WowRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/gallery': typeof GalleryRoute
+  '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
+  '/rides': typeof RidesRoute
+  '/safety': typeof SafetyRoute
+  '/wallet': typeof WalletRoute
   '/wow': typeof WowRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/gallery': typeof GalleryRoute
+  '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
+  '/rides': typeof RidesRoute
+  '/safety': typeof SafetyRoute
+  '/wallet': typeof WalletRoute
   '/wow': typeof WowRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/gallery' | '/wow'
+  fullPaths:
+    | '/'
+    | '/gallery'
+    | '/login'
+    | '/profile'
+    | '/rides'
+    | '/safety'
+    | '/wallet'
+    | '/wow'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/gallery' | '/wow'
-  id: '__root__' | '/' | '/gallery' | '/wow'
+  to:
+    | '/'
+    | '/gallery'
+    | '/login'
+    | '/profile'
+    | '/rides'
+    | '/safety'
+    | '/wallet'
+    | '/wow'
+  id:
+    | '__root__'
+    | '/'
+    | '/gallery'
+    | '/login'
+    | '/profile'
+    | '/rides'
+    | '/safety'
+    | '/wallet'
+    | '/wow'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GalleryRoute: typeof GalleryRoute
+  LoginRoute: typeof LoginRoute
+  ProfileRoute: typeof ProfileRoute
+  RidesRoute: typeof RidesRoute
+  SafetyRoute: typeof SafetyRoute
+  WalletRoute: typeof WalletRoute
   WowRoute: typeof WowRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/gallery': {
-      id: '/gallery'
-      path: '/gallery'
-      fullPath: '/gallery'
-      preLoaderRoute: typeof GalleryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/wow': {
       id: '/wow'
       path: '/wow'
       fullPath: '/wow'
       preLoaderRoute: typeof WowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wallet': {
+      id: '/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof WalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/safety': {
+      id: '/safety'
+      path: '/safety'
+      fullPath: '/safety'
+      preLoaderRoute: typeof SafetyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rides': {
+      id: '/rides'
+      path: '/rides'
+      fullPath: '/rides'
+      preLoaderRoute: typeof RidesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gallery': {
+      id: '/gallery'
+      path: '/gallery'
+      fullPath: '/gallery'
+      preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -88,6 +198,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GalleryRoute: GalleryRoute,
+  LoginRoute: LoginRoute,
+  ProfileRoute: ProfileRoute,
+  RidesRoute: RidesRoute,
+  SafetyRoute: SafetyRoute,
+  WalletRoute: WalletRoute,
   WowRoute: WowRoute,
 }
 export const routeTree = rootRouteImport
