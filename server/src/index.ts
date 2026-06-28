@@ -1,18 +1,30 @@
 /**
- * VUUP API Server — Hono on Node.js
+ * VUUP API Server — app definition (no side-effect `serve` call).
+ *
+ * This module exports the Hono `app` instance for:
+ *   - Unit/integration tests (app.request — no TCP port needed)
+ *   - Production entrypoint (server.ts) which calls serve()
  *
  * Architecture:
  *   - All routes are protected by JWT auth EXCEPT /auth/* and /health
  *   - No secrets in source — AUTH_SECRET must be set via env var
  *   - CORS scoped to dev origin; tighten to production domain before launch
- *   - Runs on PORT (default 3001) to avoid conflict with Vite dev server (5173)
+ *
+ * Backend strategy (integration/all-waves):
+ *   - Rides, auth, users, safety, carpool, patron: SQLite (VUU-22)
+ *   - Wallet (Onda 5): mock store — full campaign/transfer/pay-ride feature set
+ *   - Deliveries: mock store — full VUU-26 delivery feature set (tests depend on it)
+ *   - Sociedade: mock store — Onda 5 upgrade/passive-income
+ *   - Campaigns/coupons: SQLite (VUU-22)
+ *   - Matching: in-memory (Onda 3, unchanged)
  */
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
-import { serve } from "@hono/node-server";
+
+import "./db/database.js"; // ensure schema + migrations run at import time
 
 import { authRouter } from "./routes/auth.js";
 import { usersRouter } from "./routes/users.js";
@@ -21,6 +33,7 @@ import { walletRouter } from "./routes/wallet.js";
 import { safetyRouter } from "./routes/safety.js";
 import { carpoolRouter } from "./routes/carpool.js";
 import { patronRouter } from "./routes/patron.js";
+import { campaignsRouter, couponsRouter } from "./routes/campaigns.js";
 import { matchingRouter } from "./routes/matching.js";
 import { sociedadeRouter } from "./routes/sociedade.js";
 import { deliveryRouter } from "./routes/delivery.js";
@@ -37,7 +50,7 @@ app.use(
     origin: [
       "http://localhost:5173", // Vite dev server
       "http://localhost:4173", // Vite preview
-      "https://vuup.app", // production (update domain)
+      "https://vuup.app", // production
     ],
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
@@ -50,24 +63,26 @@ app.use(
 app.get("/health", (c) =>
   c.json({
     status: "ok",
-    version: "0.1.0",
-    mode: "mock",
+    version: "0.3.0",
+    mode: "persistent",
     timestamp: new Date().toISOString(),
   }),
 );
 
 // ─── Route registry ───────────────────────────────────────────────────────────
 
-app.route("/auth", authRouter); // /auth/*    — public
-app.route("/users", usersRouter); // /users/*   — protected
-app.route("/rides", ridesRouter); // /rides/*   — protected
-app.route("/wallet", walletRouter); // /wallet/*  — protected
-app.route("/safety", safetyRouter); // /safety/*  — protected
-app.route("/carpool", carpoolRouter); // /carpool/* — protected
-app.route("/patron", patronRouter); // /patron/*  — protected
-app.route("/matching", matchingRouter); // /matching/* — protected (Onda 3)
-app.route("/sociedade", sociedadeRouter); // /sociedade/* — protected (Onda 5)
-app.route("/deliveries", deliveryRouter); // /deliveries/* — protected (VUU-26)
+app.route("/auth", authRouter); //          /auth/*        — public (SQLite)
+app.route("/users", usersRouter); //        /users/*       — protected (SQLite)
+app.route("/rides", ridesRouter); //        /rides/*       — protected (SQLite)
+app.route("/wallet", walletRouter); //      /wallet/*      — protected (mock + Onda 5)
+app.route("/safety", safetyRouter); //      /safety/*      — protected (SQLite)
+app.route("/carpool", carpoolRouter); //    /carpool/*     — protected (SQLite)
+app.route("/patron", patronRouter); //      /patron/*      — protected (SQLite)
+app.route("/campaigns", campaignsRouter); //  /campaigns/* — protected (SQLite)
+app.route("/coupons", couponsRouter); //      /coupons/*   — protected (SQLite)
+app.route("/matching", matchingRouter); //  /matching/*    — protected (in-memory, Onda 3)
+app.route("/sociedade", sociedadeRouter); // /sociedade/*  — protected (mock, Onda 5)
+app.route("/deliveries", deliveryRouter); // /deliveries/* — protected (mock, VUU-26)
 
 // ─── 404 catch-all ───────────────────────────────────────────────────────────
 
@@ -83,56 +98,5 @@ app.onError((err, c) => {
   const message = err.message ?? "Internal server error";
   return c.json({ code: "SERVER_ERROR", message }, status as 500);
 });
-
-// ─── Start ────────────────────────────────────────────────────────────────────
-
-// Guard: do not bind the HTTP server when imported by test runners.
-// Vitest sets process.env.VITEST; the guard prevents EADDRINUSE in parallel test runs.
-if (!process.env["VITEST"]) {
-  const PORT = Number(process.env["PORT"] ?? 3001);
-
-  serve({ fetch: app.fetch, port: PORT }, () => {
-    console.log(`VUUP API server running at http://localhost:${PORT}`);
-    console.log("Mode: MOCK (in-memory data, no database)");
-    console.log("Routes:");
-    console.log("  GET  /health");
-    console.log("  POST /auth/otp-request");
-    console.log("  POST /auth/login");
-    console.log("  POST /auth/refresh");
-    console.log("  GET  /users/me");
-    console.log("  POST /rides/fare-estimate");
-    console.log("  POST /rides");
-    console.log("  GET  /rides");
-    console.log("  GET  /rides/:id");
-    console.log("  PATCH /rides/:id/status");
-    console.log("  PATCH /rides/:id/cancel");
-    console.log("  GET  /rides/nearby-drivers");
-    console.log("  GET  /patron");
-    console.log("  POST /patron");
-    console.log("  PATCH /patron/:id");
-    console.log("  DELETE /patron/:id");
-    console.log("  GET  /patron/passengers");
-    console.log("  GET  /wallet");
-    console.log("  GET  /wallet/transactions");
-    console.log("  GET  /safety/events");
-    console.log("  POST /safety/events");
-    console.log("  POST /safety/events/:id/upvote");
-    console.log("  POST /safety/sos");
-    console.log("  GET  /carpool/routes");
-    console.log("  GET  /carpool/routes/:id");
-    console.log("  POST /carpool/routes");
-    console.log("  POST /carpool/routes/:id/join");
-    console.log("  [Onda 5] POST /wallet/transfer");
-    console.log("  [Onda 5] GET  /wallet/transfers");
-    console.log("  [Onda 5] POST /wallet/campaign-discount");
-    console.log("  [Onda 5] POST /wallet/campaign-discount/apply");
-    console.log("  [Onda 5] GET  /wallet/passive-income");
-    console.log("  [Onda 5] POST /wallet/pay-ride");
-    console.log("  [Onda 5] GET  /sociedade");
-    console.log("  [Onda 5] GET  /sociedade/upgrade-options");
-    console.log("  [Onda 5] POST /sociedade/upgrade");
-    console.log("  [Onda 5] GET  /sociedade/passive-income/simulate");
-  });
-}
 
 export default app;

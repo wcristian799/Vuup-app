@@ -22,7 +22,9 @@
 
 import { describe, it, expect, beforeAll } from "vitest";
 import app from "../index.js";
-import { MOCK_USERS } from "../models/mock-data.js";
+import { createUser, findUserByPhone } from "../db/repos/users.js";
+import { createWallet, findWalletByUserId } from "../db/repos/wallet.js";
+import db from "../db/database.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -45,31 +47,28 @@ async function getToken(phone: string): Promise<string> {
 }
 
 /**
- * Ensure a user exists in MOCK_USERS with `role: "driver"`.
- * In the mock branch, auth/login auto-creates users in MOCK_USERS with role "passenger".
- * We directly mutate the in-memory array to set the role before calling getToken.
+ * Ensure a user exists in the DB with `role: "driver"`.
+ * If the user already exists (e.g., auto-created as passenger by a prior login),
+ * we force-update their role to "driver" via raw SQL.
+ * Needed because auth/login auto-creates users with `role: "passenger"`.
  */
 function ensureDriverUser(phone: string, fullName: string): void {
-  const existing = MOCK_USERS.find((u) => u.phone === phone);
+  const existing = findUserByPhone(phone);
   if (existing) {
-    // Mutate in place — mock store is a plain array
-    (existing as { role: string }).role = "driver";
+    // Force role to driver regardless of what it was
+    db.prepare("UPDATE users SET role = 'driver', updated_at = ? WHERE id = ?")
+      .run(new Date().toISOString(), existing.id);
   } else {
-    const now = new Date().toISOString();
-    MOCK_USERS.push({
-      id: crypto.randomUUID(),
+    const u = createUser({
       fullName,
       email: `${phone.replace(/\D/g, "")}@test.vuup.app`,
       phone,
       role: "driver",
       status: "active",
-      avatarUrl: null,
-      documentNumber: null,
-      rating: null,
-      totalRides: 0,
-      createdAt: now,
-      updatedAt: now,
     });
+    if (!findWalletByUserId(u.id)) {
+      createWallet(u.id, 0);
+    }
   }
 }
 
@@ -82,9 +81,7 @@ async function seedDriverLocation(driverToken: string, lat: number, lng: number)
   });
 }
 
-async function createRide(
-  passengerToken: string,
-): Promise<{ rideId: string; fareEstimateCents: number }> {
+async function createRide(passengerToken: string): Promise<{ rideId: string; fareEstimateCents: number }> {
   const res = await app.request("/rides", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${passengerToken}` },
@@ -99,7 +96,7 @@ async function createRide(
 }
 
 const PASSENGER_PHONE = "+5511999990001"; // Ana — passenger (seeded)
-const DRIVER_PHONE = "+5511999990002"; // Carlos — driver (seeded)
+const DRIVER_PHONE    = "+5511999990002"; // Carlos — driver (seeded)
 
 // Extra driver phones — created explicitly with driver role
 const DRIVER_2_PHONE = "+5511900000002";
@@ -203,13 +200,13 @@ describe("Disputa de corrida — session lifecycle", () => {
 
   it("driver can submit a bid", async () => {
     const passengerToken = await getToken(PASSENGER_PHONE);
-    const driverToken = await getToken(DRIVER_PHONE);
+    const driverToken    = await getToken(DRIVER_PHONE);
     const { rideId } = await createRide(passengerToken);
 
     const res = await app.request(`/matching/rides/${rideId}/disputa/bid`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${driverToken}` },
-      body: JSON.stringify({ lat: -23.551, lng: -46.634 }),
+      body: JSON.stringify({ lat: -23.5510, lng: -46.6340 }),
     });
     expect(res.status).toBe(201);
     const body = await json(res);
@@ -220,19 +217,19 @@ describe("Disputa de corrida — session lifecycle", () => {
 
   it("same driver cannot bid twice on the same ride", async () => {
     const passengerToken = await getToken(PASSENGER_PHONE);
-    const driverToken = await getToken(DRIVER_PHONE);
+    const driverToken    = await getToken(DRIVER_PHONE);
     const { rideId } = await createRide(passengerToken);
 
     await app.request(`/matching/rides/${rideId}/disputa/bid`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${driverToken}` },
-      body: JSON.stringify({ lat: -23.551, lng: -46.634 }),
+      body: JSON.stringify({ lat: -23.5510, lng: -46.6340 }),
     });
 
     const res2 = await app.request(`/matching/rides/${rideId}/disputa/bid`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${driverToken}` },
-      body: JSON.stringify({ lat: -23.551, lng: -46.634 }),
+      body: JSON.stringify({ lat: -23.5510, lng: -46.6340 }),
     });
     expect(res2.status).toBe(409);
     const body = await json(res2);
@@ -241,15 +238,15 @@ describe("Disputa de corrida — session lifecycle", () => {
 
   it("price-stability: bid above fare estimate is rejected", async () => {
     const passengerToken = await getToken(PASSENGER_PHONE);
-    const driverToken = await getToken(DRIVER_PHONE);
+    const driverToken    = await getToken(DRIVER_PHONE);
     const { rideId, fareEstimateCents } = await createRide(passengerToken);
 
     const res = await app.request(`/matching/rides/${rideId}/disputa/bid`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${driverToken}` },
       body: JSON.stringify({
-        lat: -23.551,
-        lng: -46.634,
+        lat: -23.5510,
+        lng: -46.6340,
         offeredFareCents: fareEstimateCents + 100, // 100 cents over estimate
       }),
     });
@@ -260,15 +257,15 @@ describe("Disputa de corrida — session lifecycle", () => {
 
   it("driver can bid below fare estimate", async () => {
     const passengerToken = await getToken(PASSENGER_PHONE);
-    const driverToken = await getToken(DRIVER_PHONE);
+    const driverToken    = await getToken(DRIVER_PHONE);
     const { rideId, fareEstimateCents } = await createRide(passengerToken);
 
     const res = await app.request(`/matching/rides/${rideId}/disputa/bid`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${driverToken}` },
       body: JSON.stringify({
-        lat: -23.551,
-        lng: -46.634,
+        lat: -23.5510,
+        lng: -46.6340,
         offeredFareCents: Math.max(100, fareEstimateCents - 100),
       }),
     });
@@ -294,10 +291,7 @@ describe("Disputa de corrida — 5-driver cap + winner selection", () => {
       const res = await app.request(`/matching/rides/${rideId}/disputa/bid`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
-        body: JSON.stringify({
-          lat: -23.55 + Math.random() * 0.01,
-          lng: -46.63 + Math.random() * 0.01,
-        }),
+        body: JSON.stringify({ lat: -23.55 + Math.random() * 0.01, lng: -46.63 + Math.random() * 0.01 }),
       });
       expect(res.status).toBe(201);
     }
@@ -512,7 +506,7 @@ describe("Efeito Enxame — event lifecycle", () => {
 
   it("admin can resolve a swarm event; resolved events disappear from list", async () => {
     const reporterToken = await getToken(PASSENGER_PHONE);
-    const adminToken = await getToken("+5511999990099"); // admin via any admin phone
+    const adminToken    = await getToken("+5511999990099"); // admin via any admin phone
 
     // Create event
     const createRes = await app.request("/matching/swarm", {

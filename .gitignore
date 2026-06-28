@@ -6,3 +6,7 @@ coverage
 .env*
 tsconfig.tsbuildinfo
 *.tsbuildinfo
+
+# Server SQLite database
+server/data/
+*.db

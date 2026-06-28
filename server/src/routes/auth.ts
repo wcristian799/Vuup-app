@@ -1,10 +1,10 @@
 /**
- * Auth routes — OTP-based phone login (mock: any 6-digit code accepted in dev).
+ * Auth routes — OTP-based phone login backed by SQLite.
  *
- * POST /auth/otp-request  — send OTP to phone (mock: logs to console)
- * POST /auth/login        — verify OTP + issue JWT pair
+ * POST /auth/otp-request  — request OTP (dev: logs to console, prod: SMS)
+ * POST /auth/login        — verify OTP + issue JWT pair, create user if new
  * POST /auth/refresh      — exchange refresh token for new access token
- * POST /auth/logout       — (client should discard tokens; here we just 200)
+ * POST /auth/logout       — revoke refresh token
  */
 
 import { Hono } from "hono";
@@ -12,16 +12,25 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { LoginRequestSchema, LoginResponseSchema } from "../models/schemas.js";
 import { signAccessToken, signRefreshToken, verifyToken } from "../lib/auth.js";
-import { findUserByPhone, MOCK_USERS } from "../models/mock-data.js";
+import {
+  createOtp,
+  verifyOtpDev,
+  storeRefreshToken,
+  validateRefreshToken,
+  revokeRefreshToken,
+} from "../db/repos/auth.js";
+import { findUserByPhone, createUser, findUserById } from "../db/repos/users.js";
+import { createWallet, findWalletByUserId } from "../db/repos/wallet.js";
 
 export const authRouter = new Hono();
 
 // POST /auth/otp-request
 authRouter.post("/otp-request", zValidator("json", z.object({ phone: z.string() })), (c) => {
   const { phone } = c.req.valid("json");
-  // In prod: send SMS via Twilio/AWS SNS. Mock: log OTP.
   const mockOtp = "123456";
-  console.log(`[mock] OTP for ${phone}: ${mockOtp}`);
+  createOtp(phone, mockOtp);
+  // In prod: send via SMS servico (Twilio/AWS SNS). Dev: log only.
+  console.log(`[auth] OTP for ${phone}: ${mockOtp}`);
   return c.json({ message: "OTP sent", expiresIn: 300 });
 });
 
@@ -29,30 +38,26 @@ authRouter.post("/otp-request", zValidator("json", z.object({ phone: z.string() 
 authRouter.post("/login", zValidator("json", LoginRequestSchema), async (c) => {
   const { phone, otpCode } = c.req.valid("json");
 
-  // Mock: accept any 6-digit OTP. In prod: verify against Redis/DB.
-  if (otpCode.length !== 6) {
-    return c.json({ code: "INVALID_OTP", message: "OTP must be 6 digits" }, 400);
+  // Dev mode: accept any 6-digit code. Production: verifyAndConsumeOtp(phone, otpCode).
+  const otpValid = verifyOtpDev(phone, otpCode);
+  if (!otpValid) {
+    return c.json({ code: "INVALID_OTP", message: "OTP must be exactly 6 digits" }, 400);
   }
 
   let user = findUserByPhone(phone);
   if (!user) {
-    // Auto-create passenger account in mock mode
-    const now = new Date().toISOString();
-    user = {
-      id: crypto.randomUUID(),
+    // Auto-register as passenger on first login
+    user = createUser({
       fullName: "Novo Usuário",
       email: `${phone.replace(/\D/g, "")}@vuup.app`,
       phone,
       role: "passenger",
       status: "active",
-      avatarUrl: null,
-      documentNumber: null,
-      rating: null,
-      totalRides: 0,
-      createdAt: now,
-      updatedAt: now,
-    };
-    MOCK_USERS.push(user);
+    });
+    // Create associated wallet
+    if (!findWalletByUserId(user.id)) {
+      createWallet(user.id, 0);
+    }
   }
 
   const [accessToken, refreshToken] = await Promise.all([
@@ -60,10 +65,13 @@ authRouter.post("/login", zValidator("json", LoginRequestSchema), async (c) => {
     signRefreshToken(user.id),
   ]);
 
+  // Persist refresh token
+  storeRefreshToken(refreshToken, user.id);
+
   const response = LoginResponseSchema.parse({
     accessToken,
     refreshToken,
-    expiresIn: 900, // 15 min
+    expiresIn: 900,
     user: {
       id: user.id,
       fullName: user.fullName,
@@ -82,23 +90,41 @@ authRouter.post(
   zValidator("json", z.object({ refreshToken: z.string() })),
   async (c) => {
     const { refreshToken } = c.req.valid("json");
+
+    // First verify JWT signature/expiry
+    let userId: string;
     try {
       const payload = await verifyToken(refreshToken);
-      const userId = payload.sub ?? "";
-      const user = MOCK_USERS.find((u) => u.id === userId);
-      if (!user) {
-        return c.json({ code: "USER_NOT_FOUND", message: "User no longer exists" }, 401);
-      }
-      const accessToken = await signAccessToken(userId, user.role);
-      return c.json({ accessToken, expiresIn: 900 });
+      userId = payload.sub ?? "";
     } catch {
       return c.json({ code: "INVALID_TOKEN", message: "Refresh token invalid or expired" }, 401);
     }
+
+    // Then check DB revocation
+    const record = validateRefreshToken(refreshToken);
+    if (!record) {
+      return c.json({ code: "TOKEN_REVOKED", message: "Refresh token has been revoked" }, 401);
+    }
+
+    const user = findUserById(userId);
+    if (!user) {
+      return c.json({ code: "USER_NOT_FOUND", message: "User no longer exists" }, 401);
+    }
+
+    const accessToken = await signAccessToken(userId, user.role);
+    return c.json({ accessToken, expiresIn: 900 });
   },
 );
 
 // POST /auth/logout
-authRouter.post("/logout", (c) => {
-  // Client-side discard pattern — server is stateless for mock.
-  return c.json({ message: "Logged out" });
-});
+authRouter.post(
+  "/logout",
+  zValidator("json", z.object({ refreshToken: z.string().optional() })),
+  (c) => {
+    const { refreshToken } = c.req.valid("json");
+    if (refreshToken) {
+      revokeRefreshToken(refreshToken);
+    }
+    return c.json({ message: "Logged out" });
+  },
+);

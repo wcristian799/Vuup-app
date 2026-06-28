@@ -17,10 +17,32 @@
  *  8. Unauthenticated requests rejected (401)
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import app from "../index.js";
+import db from "../db/database.js";
 import { MOCK_DELIVERIES } from "../routes/delivery.js";
 import { MOCK_WALLETS, MOCK_USERS } from "../models/mock-data.js";
+
+// ─── SQLite seed ──────────────────────────────────────────────────────────────
+// Auth (SQLite) must find users with the same fixed UUIDs used in MOCK_WALLETS/
+// MOCK_USERS so that JWTs carry the right userId for mock data lookups.
+
+beforeAll(() => {
+  const NOW = new Date().toISOString();
+  const YESTERDAY = new Date(Date.now() - 86_400_000).toISOString();
+
+  const insUser = db.prepare(`
+    INSERT OR IGNORE INTO users
+      (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
+  `);
+  insUser.run("00000000-0000-0000-0000-000000000001", "Ana Costa",       "ana@vuup.app",     "+5511999990001", "passenger", 4.8, 42,  YESTERDAY, NOW);
+  insUser.run("00000000-0000-0000-0000-000000000002", "Carlos Moto",     "carlos@vuup.app",  "+5511999990002", "driver",    4.9, 327, YESTERDAY, NOW);
+  insUser.run("00000000-0000-0000-0000-000000000003", "Roberto Fundador","roberto@vuup.app", "+5511999990003", "founder",   4.7, 15,  YESTERDAY, NOW);
+  insUser.run("00000000-0000-0000-0000-000000000004", "Marcos Motoboy",  "marcos@vuup.app",  "+5511999990004", "motoboy",   4.6, 89,  YESTERDAY, NOW);
+  insUser.run("00000000-0000-0000-0000-000000000005", "Bia Motoboy",     "bia@vuup.app",     "+5511999990005", "motoboy",   4.5, 67,  YESTERDAY, NOW);
+  insUser.run("00000000-0000-0000-0000-000000000099", "Admin",           "admin@vuup.app",   "+5511999990099", "admin",     5.0, 0,   YESTERDAY, NOW);
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -49,6 +71,13 @@ function ensureMotoboyUser(phone: string, fullName: string): string {
   const existing = MOCK_USERS.find((u) => u.phone === phone);
   if (existing) {
     (existing as { role: string }).role = "motoboy";
+    // Also ensure SQLite has this user with the same ID
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT OR IGNORE INTO users
+        (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 'motoboy', 'active', null, 0, ?, ?)
+    `).run(existing.id, fullName, `${phone.replace(/\D/g, "")}@test.vuup.app`, phone, now, now);
     return existing.id;
   }
   const id = crypto.randomUUID();
@@ -67,6 +96,12 @@ function ensureMotoboyUser(phone: string, fullName: string): string {
     createdAt: now,
     updatedAt: now,
   });
+  // Also insert into SQLite with the same ID so auth finds it
+  db.prepare(`
+    INSERT OR IGNORE INTO users
+      (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
+    VALUES (?, ?, ?, ?, 'motoboy', 'active', null, 0, ?, ?)
+  `).run(id, fullName, `${phone.replace(/\D/g, "")}@test.vuup.app`, phone, now, now);
   return id;
 }
 

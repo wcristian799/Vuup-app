@@ -35,7 +35,51 @@
 
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import app from "../index.js";
+import db from "../db/database.js";
 import { MOCK_USERS, MOCK_WALLETS, MOCK_RIDES } from "../models/mock-data.js";
+
+// ─── SQLite seed (global) ─────────────────────────────────────────────────────
+// Seed fixture users + coupon into the in-memory SQLite so that:
+//   - auth finds them with the fixed UUIDs used in MOCK_USERS/MOCK_WALLETS
+//   - rides.ts (SQLite) can look up users and coupons
+
+{
+  const NOW = new Date().toISOString();
+  const YESTERDAY = new Date(Date.now() - 86_400_000).toISOString();
+  const NEXT_MONTH = new Date(Date.now() + 30 * 86_400_000).toISOString();
+
+  const insUser = db.prepare(`
+    INSERT OR IGNORE INTO users
+      (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
+  `);
+  insUser.run("00000000-0000-0000-0000-000000000001", "Ana Costa",       "ana@vuup.app",     "+5511999990001", "passenger", 4.8, 42,  YESTERDAY, NOW);
+  insUser.run("00000000-0000-0000-0000-000000000002", "Carlos Moto",     "carlos@vuup.app",  "+5511999990002", "driver",    4.9, 327, YESTERDAY, NOW);
+  insUser.run("00000000-0000-0000-0000-000000000003", "Roberto Fundador","roberto@vuup.app", "+5511999990003", "founder",   4.7, 15,  YESTERDAY, NOW);
+  insUser.run("00000000-0000-0000-0000-000000000099", "Admin",           "admin@vuup.app",   "+5511999990099", "admin",     5.0, 0,   YESTERDAY, NOW);
+
+  // Coupon for fare estimate test (no campaign FK needed — campaign_id is nullable)
+  db.prepare(`
+    INSERT OR IGNORE INTO coupons
+      (id, code, campaign_id, discount_type, discount_value, max_usages, usages_count, min_fare_cents, valid_from, valid_until, is_active)
+    VALUES ('coup-e2e-001', 'VUUP10', NULL, 'percent', 10, NULL, 0, 0, ?, ?, 1)
+  `).run(YESTERDAY, NEXT_MONTH);
+
+  // Seed a completed ride with the known mock ID so Phase 5 "cannot cancel completed" test works
+  db.prepare(`
+    INSERT OR IGNORE INTO rides
+      (id, passenger_id, driver_id, route_type, status, origin_lat, origin_lng, origin_address,
+       destination_lat, destination_lng, destination_address, estimated_distance_km,
+       estimated_duration_min, fare_estimate, fare_actual, completed_at, created_at, updated_at)
+    VALUES (?, ?, ?, 'livre', 'completed', -23.5505, -46.6333, 'Av. Paulista, 1000',
+            -23.5489, -46.6388, 'Rua Augusta, 500', 0.8, 5, 1200, 1200, ?, ?, ?)
+  `).run(
+    "10000000-0000-0000-0000-000000000001",
+    "00000000-0000-0000-0000-000000000001", // Ana
+    "00000000-0000-0000-0000-000000000002", // Carlos
+    YESTERDAY, YESTERDAY, NOW,
+  );
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -64,6 +108,9 @@ function ensureDriver(phone: string, name: string): string {
   const existing = MOCK_USERS.find((u) => u.phone === phone);
   if (existing) {
     (existing as { role: string }).role = "driver";
+    // Keep SQLite in sync
+    db.prepare("UPDATE users SET role = 'driver', updated_at = ? WHERE phone = ?")
+      .run(new Date().toISOString(), phone);
     return existing.id;
   }
   const id = crypto.randomUUID();
@@ -82,6 +129,12 @@ function ensureDriver(phone: string, name: string): string {
     createdAt: now,
     updatedAt: now,
   });
+  // Also seed SQLite so auth finds this driver with the correct UUID
+  db.prepare(`
+    INSERT OR IGNORE INTO users
+      (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
+    VALUES (?, ?, ?, ?, 'driver', 'active', 4.8, 0, ?, ?)
+  `).run(id, name, `${phone.replace(/\D/g, "")}@e2e.vuup.app`, phone, now, now);
   return id;
 }
 

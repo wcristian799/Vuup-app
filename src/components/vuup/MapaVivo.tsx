@@ -14,11 +14,27 @@ interface RideCostBubble {
   color: "electric" | "neon" | "gold";
 }
 
+interface VehicleMarker {
+  id: string;
+  name: string;
+  x: string; // % position
+  y: string;
+  active: boolean;
+}
+
 const RIDE_BUBBLES: RideCostBubble[] = [
   { id: "b1", label: "Exclusiva", price: "R$ 24", x: 18, y: 28, color: "electric" },
   { id: "b2", label: "Rota Livre", price: "R$ 12", x: 68, y: 22, color: "neon" },
   { id: "b3", label: "Rota Fixa", price: "R$ 8", x: 78, y: 55, color: "neon" },
   { id: "b4", label: "Programada", price: "R$ 18", x: 20, y: 62, color: "gold" },
+];
+
+const VEHICLE_MARKERS: VehicleMarker[] = [
+  { id: "v1", name: "Motorista Carlos", x: "35%", y: "42%", active: true },
+  { id: "v2", name: "Motorista Ana", x: "55%", y: "30%", active: false },
+  { id: "v3", name: "Motorista Paulo", x: "22%", y: "55%", active: true },
+  { id: "v4", name: "Motorista Lima", x: "70%", y: "48%", active: false },
+  { id: "v5", name: "Motorista Faria", x: "45%", y: "68%", active: false },
 ];
 
 const BUBBLE_COLORS = {
@@ -108,26 +124,44 @@ function MapPlaceholder() {
         }}
       />
 
-      {/* Simulated idle vehicle dots */}
-      {[
-        { x: "35%", y: "42%" },
-        { x: "55%", y: "30%" },
-        { x: "22%", y: "55%" },
-        { x: "70%", y: "48%" },
-        { x: "45%", y: "68%" },
-      ].map((pos, i) => (
-        <div
-          key={i}
-          aria-hidden="true"
-          className="absolute h-3 w-3 rounded-full border-2 border-electric bg-surface-2"
+      {/* Vehicle markers per spec: 40×40px, electric border on active, pulse animation */}
+      {VEHICLE_MARKERS.map((vehicle, i) => (
+        <button
+          key={vehicle.id}
+          className={cn(
+            "absolute flex items-center justify-center rounded-full",
+            "h-10 w-10 border-2 bg-surface-2",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            "transition-colors",
+          )}
           style={{
-            left: pos.x,
-            top: pos.y,
+            left: vehicle.x,
+            top: vehicle.y,
             transform: "translate(-50%, -50%)",
-            animation: i % 2 === 0 ? "pulse 2.5s ease-in-out infinite" : undefined,
-            animationDelay: `${i * 400}ms`,
+            borderColor: vehicle.active ? "oklch(0.72 0.22 246)" : "oklch(0.26 0.026 262)",
+            animation: vehicle.active ? `vehicle-pulse 2000ms ease-in-out infinite` : undefined,
+            animationDelay: vehicle.active ? `${i * 400}ms` : undefined,
           }}
-        />
+          aria-label={`Motorista ativo — ${vehicle.name}`}
+          role="button"
+        >
+          {/* Vehicle icon */}
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            stroke={vehicle.active ? "oklch(0.72 0.22 246)" : "oklch(0.62 0.02 250)"}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-2" />
+            <circle cx="7" cy="17" r="2" />
+            <circle cx="15" cy="17" r="2" />
+          </svg>
+        </button>
       ))}
 
       {/* User location pin */}

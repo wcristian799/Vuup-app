@@ -144,6 +144,31 @@ body {
   }
 }
 
+/* Vehicle marker pulse: opacity + scale, spec: 2000ms loop */
+@keyframes vehicle-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
+/* Supermarket ripple expand */
+@keyframes ripple-expand {
+  from {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(4);
+    opacity: 0;
+  }
+}
+
 /* Tab active indicator */
 .tab-active-indicator {
   position: absolute;

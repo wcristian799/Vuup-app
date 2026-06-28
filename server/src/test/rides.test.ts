@@ -12,8 +12,53 @@
  *  - Pricing unit tests (distance, duration, surge, coupon)
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import app from "../index.js";
+import db from "../db/database.js";
+
+// ─── Seed test data ───────────────────────────────────────────────────────────
+
+beforeAll(() => {
+  const NOW = new Date().toISOString();
+  const YESTERDAY = new Date(Date.now() - 86_400_000).toISOString();
+  const NEXT_MONTH = new Date(Date.now() + 30 * 86_400_000).toISOString();
+
+  const insUser = db.prepare(`
+    INSERT OR IGNORE INTO users (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
+  `);
+  insUser.run("00000000-0000-0000-0000-000000000001", "Ana Costa",   "ana@vuup.app",    "+5511999990001", "passenger", 4.8, 42,  YESTERDAY, NOW);
+  insUser.run("00000000-0000-0000-0000-000000000002", "Carlos Moto", "carlos@vuup.app", "+5511999990002", "driver",    4.9, 327, YESTERDAY, NOW);
+  insUser.run("00000000-0000-0000-0000-000000000003", "R. Fundador", "rf@vuup.app",     "+5511999990003", "founder",   null, 0,  YESTERDAY, NOW);
+
+  // Wallets
+  const insWallet = db.prepare(`
+    INSERT OR IGNORE INTO wallets (id, user_id, balance_cents, pending_cents, lifetime_earnings_cents, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  insWallet.run("20000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000001", 8750,   0,    0,      NOW);
+  insWallet.run("20000000-0000-0000-0000-000000000002", "00000000-0000-0000-0000-000000000002", 124300, 2900, 528000, NOW);
+  insWallet.run("20000000-0000-0000-0000-000000000003", "00000000-0000-0000-0000-000000000003", 312000, 0,    1200000, NOW);
+
+  // Patron link: Ana → Carlos
+  db.prepare(`
+    INSERT OR IGNORE INTO patron_links (id, passenger_id, driver_id, label, is_active, created_at, updated_at)
+    VALUES (?, ?, ?, ?, 1, ?, ?)
+  `).run(
+    "60000000-0000-0000-0000-000000000001",
+    "00000000-0000-0000-0000-000000000001",
+    "00000000-0000-0000-0000-000000000002",
+    "Carlos — Motorista Fixo",
+    YESTERDAY, NOW,
+  );
+
+  // Coupon VUUP10
+  db.prepare(`
+    INSERT OR IGNORE INTO coupons
+      (id, code, discount_type, discount_value, max_usages, usages_count, min_fare_cents, valid_from, valid_until, is_active)
+    VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, 1)
+  `).run("70000000-0000-0000-0000-000000000001", "VUUP10", "percent", 10, 1000, 500, YESTERDAY, NEXT_MONTH);
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

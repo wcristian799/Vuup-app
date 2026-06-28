@@ -13,6 +13,7 @@
 
 import { describe, it, expect, beforeAll } from "vitest";
 import app from "../index.js";
+import db from "../db/database.js";
 import { MOCK_USERS } from "../models/mock-data.js";
 import type { UserRole } from "../models/schemas.js";
 
@@ -24,7 +25,7 @@ async function json(res: Response): Promise<any> {
 }
 
 async function getToken(phone: string, role: UserRole = "driver"): Promise<string> {
-  // Ensure user exists with the right role
+  // Ensure user exists with the right role in MOCK_USERS
   const existing = MOCK_USERS.find((u) => u.phone === phone);
   if (existing) {
     (existing as { role: string }).role = role;
@@ -45,6 +46,22 @@ async function getToken(phone: string, role: UserRole = "driver"): Promise<strin
       updatedAt: now,
     });
   }
+
+  // Ensure SQLite also has this user with the right role so auth returns the correct JWT claim
+  const now = new Date().toISOString();
+  const email = `${phone.replace(/\D/g, "")}@stress.vuup.test`;
+  db.prepare(`
+    INSERT OR IGNORE INTO users
+      (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 'active', null, 0, ?, ?)
+  `).run(
+    MOCK_USERS.find((u) => u.phone === phone)!.id,
+    `Test ${role} ${phone}`,
+    email, phone, role, now, now,
+  );
+  // Force-update role in case it was already inserted with a different role
+  db.prepare("UPDATE users SET role = ?, updated_at = ? WHERE phone = ?")
+    .run(role, now, phone);
 
   const res = await app.request("/auth/login", {
     method: "POST",
