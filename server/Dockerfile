@@ -9,9 +9,11 @@ WORKDIR /app
 # Native build toolchain for better-sqlite3
 RUN apk add --no-cache python3 make g++
 
-# Install all deps (incl. dev) against the lockfile for a reproducible build
+# Install all deps (incl. dev) against the lockfile for a reproducible build.
+# --include=dev forces devDependencies even when the build host injects
+# NODE_ENV=production (Coolify passes app env into the build), so `tsc` is present.
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 # Compile TypeScript -> dist/
 COPY tsconfig.json ./
