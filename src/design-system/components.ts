@@ -392,6 +392,8 @@ export const componentInventory = [
   { name: "DriverDashboard", path: "src/components/vuup/DriverDashboard.tsx", status: "implemented" },
   { name: "ScreenTransition", path: "src/components/vuup/ScreenTransition.tsx", status: "implemented" },
   { name: "DisputeCounterOfferPanel", path: "src/components/vuup/DisputeCounterOfferPanel.tsx", status: "implemented" },
+  { name: "EntregasScreen", path: "src/components/vuup/EntregasScreen.tsx", status: "implemented" },
+  { name: "DeliveryConfirmationPanel", path: "src/components/vuup/DeliveryConfirmationPanel.tsx", status: "implemented" },
   // Layout
   { name: "AppShell", path: "src/routes/__root.tsx (pattern)", status: "implemented" },
   { name: "StatusBar", path: "src/components/vuup/StatusBar.tsx", status: "implemented" },

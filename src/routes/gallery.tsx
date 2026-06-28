@@ -44,6 +44,8 @@ import { ShieldStatus } from "@/components/vuup/ShieldStatus";
 import { ModeSliderCard } from "@/components/vuup/ModeSliderCard";
 import { DriverDashboard } from "@/components/vuup/DriverDashboard";
 import { DisputeCounterOfferPanel } from "@/components/vuup/DisputeCounterOfferPanel";
+import { EntregasScreen } from "@/components/vuup/EntregasScreen";
+import { DeliveryConfirmationPanel } from "@/components/vuup/DeliveryConfirmationPanel";
 
 export const Route = createFileRoute("/gallery")({
   component: GalleryPage,
@@ -67,6 +69,7 @@ function GalleryPage() {
   const [supermarketMode, setSupermarketMode] = React.useState(false);
   const [earningsValue, setEarningsValue] = React.useState(24350);
   const [disputeOpen, setDisputeOpen] = React.useState(false);
+  const [deliveryConfirmOpen, setDeliveryConfirmOpen] = React.useState(false);
 
   const COMMUNITY_MEMBERS = [
     { id: "m1", label: "Motorista A1", type: "driver" as const },
@@ -518,6 +521,38 @@ function GalleryPage() {
           </div>
         </Section>
 
+        {/* ── EntregasScreen ── */}
+        <Section title="EntregasScreen (Entregas & Comércio)">
+          <div className="px-4">
+            <p className="text-xs text-muted-foreground mb-3">
+              Tela de entregas — aba "Entregas" do app. Dois sub-tabs: pedido novo e lista.
+            </p>
+            <div className="rounded-2xl border border-border bg-surface-2 overflow-hidden" style={{ maxHeight: 520 }}>
+              <div className="overflow-y-auto h-[520px]">
+                <EntregasScreen />
+              </div>
+            </div>
+          </div>
+        </Section>
+
+        {/* ── DeliveryConfirmationPanel ── */}
+        <Section title="DeliveryConfirmationPanel">
+          <div className="px-4">
+            <p className="text-xs text-muted-foreground mb-3">
+              Bottom-sheet de confirmação de entrega (motoboy). ARIA completo: role=dialog,
+              aria-modal, focus trap, Escape to close. Labels ARIA no botão de confirmação.
+            </p>
+            <Button
+              variant="neon"
+              size="sm"
+              onClick={() => setDeliveryConfirmOpen(true)}
+              aria-label="Demonstrar painel de confirmação de entrega"
+            >
+              Abrir confirmação de entrega
+            </Button>
+          </div>
+        </Section>
+
         <div className="h-8" />
       </div>
 
@@ -537,6 +572,19 @@ function GalleryPage() {
           setDisputeOpen(false);
         }}
         onClose={() => setDisputeOpen(false)}
+      />
+
+      {/* ── DeliveryConfirmationPanel ── */}
+      <DeliveryConfirmationPanel
+        open={deliveryConfirmOpen}
+        delivery={{
+          id: "demo-delivery-001",
+          dropoff: { address: "Rua Augusta, 1200 — Consolação", contactName: "João Silva" },
+          packageDescription: "Caixa frágil — eletrônicos",
+          fareActual: 2400,
+        }}
+        onConfirm={() => setDeliveryConfirmOpen(false)}
+        onClose={() => setDeliveryConfirmOpen(false)}
       />
     </main>
   );

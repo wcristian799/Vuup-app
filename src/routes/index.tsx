@@ -1,6 +1,6 @@
 import * as React from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Map as MapIcon, Layers, ShieldAlert, User, Wallet } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Map as MapIcon, Layers, ShieldAlert, User, Package } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { StatusBar } from "@/components/vuup/StatusBar";
 import { MapaVivo } from "@/components/vuup/MapaVivo";
@@ -8,55 +8,22 @@ import { RideSelectorMatrix, type RideTypeKey } from "@/components/vuup/RideSele
 import { SafetyCenter } from "@/components/vuup/SafetyCenter";
 import { ScreenTransition } from "@/components/vuup/ScreenTransition";
 import { DriverDashboard } from "@/components/vuup/DriverDashboard";
-import { EarningsCounter } from "@/components/vuup/EarningsCounter";
+import { EntregasScreen } from "@/components/vuup/EntregasScreen";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   component: VuupPassengerApp,
 });
 
-type Tab = "map" | "matrix" | "wallet" | "profile" | "shield";
+type Tab = "map" | "matrix" | "entregas" | "profile" | "shield";
 
 const TABS: { key: Tab; label: string; icon: typeof MapIcon }[] = [
   { key: "map", label: "Início", icon: MapIcon },
   { key: "matrix", label: "Corridas", icon: Layers },
-  { key: "wallet", label: "Carteira", icon: Wallet },
+  { key: "entregas", label: "Entregas", icon: Package },
   { key: "profile", label: "Perfil", icon: User },
   { key: "shield", label: "Segurança", icon: ShieldAlert },
 ];
-
-// ─── Wallet placeholder ───────────────────────────────────────────────────────
-
-function WalletPlaceholder() {
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-6 px-6">
-      <div className="text-center">
-        <p className="font-display font-bold text-lg text-foreground mb-1">Carteira VUUP</p>
-        <p className="text-sm text-muted-foreground">
-          Acompanhe seus ganhos acumulados em tempo real.
-        </p>
-      </div>
-
-      {/* Demo EarningsCounter */}
-      <div className="flex flex-col items-center gap-1">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-          Saldo disponível
-        </p>
-        <EarningsCounter value={243750} size="hero" colorClass="text-neon" />
-        <p className="text-xs text-muted-foreground mt-1">Próximo pagamento em 2 dias</p>
-      </div>
-
-      <div className="mt-2">
-        <Link
-          to="/gallery"
-          className="inline-flex items-center gap-1.5 rounded-full border border-electric/40 bg-electric/10 px-4 py-2 text-sm text-electric hover:bg-electric/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        >
-          Ver galeria de componentes →
-        </Link>
-      </div>
-    </div>
-  );
-}
 
 // ─── Main passenger app ───────────────────────────────────────────────────────
 
@@ -125,10 +92,10 @@ function VuupPassengerApp() {
               </div>
             </ScreenTransition>
           )}
-          {activeTab === "wallet" && (
-            <ScreenTransition motionKey="wallet">
-              <div className="absolute inset-0 pt-8 pb-20" aria-label="Carteira">
-                <WalletPlaceholder />
+          {activeTab === "entregas" && (
+            <ScreenTransition motionKey="entregas">
+              <div className="absolute inset-0 pt-8 pb-20 overflow-hidden" aria-label="Entregas e Comércio">
+                <EntregasScreen />
               </div>
             </ScreenTransition>
           )}
