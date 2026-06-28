@@ -33,9 +33,9 @@ async function getToken(phone: string): Promise<string> {
 }
 
 const PASSENGER_PHONE = "+5511999990001"; // Ana — passenger with patron link
-const DRIVER_PHONE    = "+5511999990002"; // Carlos — driver (Ana's patron)
+const DRIVER_PHONE = "+5511999990002"; // Carlos — driver (Ana's patron)
 
-const ORIGIN      = { lat: -23.5505, lng: -46.6333, address: "Paulista" };
+const ORIGIN = { lat: -23.5505, lng: -46.6333, address: "Paulista" };
 const DESTINATION = { lat: -23.5489, lng: -46.6388, address: "Augusta" };
 
 // ─── Pricing unit tests ────────────────────────────────────────────────────────
@@ -100,20 +100,20 @@ describe("calculateFare", () => {
   });
 
   it("fixa is cheaper than livre (same route)", () => {
-    const livre  = calculateFare({ ...base, modality: "livre" });
-    const fixa   = calculateFare({ ...base, modality: "fixa" });
+    const livre = calculateFare({ ...base, modality: "livre" });
+    const fixa = calculateFare({ ...base, modality: "fixa" });
     expect(fixa.totalCents).toBeLessThan(livre.totalCents);
   });
 
   it("programada includes scheduling fee", () => {
-    const livre      = calculateFare({ ...base, modality: "livre" });
+    const livre = calculateFare({ ...base, modality: "livre" });
     const programada = calculateFare({ ...base, modality: "programada" });
     expect(programada.schedulingFeeCents).toBeGreaterThan(0);
     expect(programada.totalCents).toBeGreaterThan(livre.totalCents);
   });
 
   it("motoboy is cheaper than livre", () => {
-    const livre   = calculateFare({ ...base, modality: "livre" });
+    const livre = calculateFare({ ...base, modality: "livre" });
     const motoboy = calculateFare({ ...base, modality: "motoboy" });
     expect(motoboy.totalCents).toBeLessThan(livre.totalCents);
   });
@@ -132,7 +132,7 @@ describe("calculateFare", () => {
       validUntil: new Date(Date.now() + 86400000).toISOString(),
       isActive: true,
     };
-    const withCoupon    = calculateFare({ ...base, modality: "livre", coupon });
+    const withCoupon = calculateFare({ ...base, modality: "livre", coupon });
     const withoutCoupon = calculateFare({ ...base, modality: "livre" });
     expect(withCoupon.couponDiscountCents).toBeGreaterThan(0);
     expect(withCoupon.totalCents).toBeLessThan(withoutCoupon.totalCents);
@@ -153,7 +153,7 @@ describe("calculateFare", () => {
       isActive: true,
     };
     const without = calculateFare({ ...base, modality: "livre" });
-    const withC   = calculateFare({ ...base, modality: "livre", coupon });
+    const withC = calculateFare({ ...base, modality: "livre", coupon });
     expect(withC.couponDiscountCents).toBe(500);
     expect(withC.totalCents).toBe(Math.max(0, without.totalCents - 500));
   });
@@ -223,7 +223,9 @@ describe("POST /rides/fare-estimate", () => {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          modality: "livre", origin: ORIGIN, destination: DESTINATION,
+          modality: "livre",
+          origin: ORIGIN,
+          destination: DESTINATION,
           couponCode: "VUUP10",
         }),
       }),
@@ -233,7 +235,7 @@ describe("POST /rides/fare-estimate", () => {
         body: JSON.stringify({ modality: "livre", origin: ORIGIN, destination: DESTINATION }),
       }),
     ]);
-    const withBody    = await json(withRes);
+    const withBody = await json(withRes);
     const withoutBody = await json(withoutRes);
     expect(withBody.fareBreakdown.couponDiscountCents).toBeGreaterThan(0);
     expect(withBody.fareBreakdown.totalCents).toBeLessThan(withoutBody.fareBreakdown.totalCents);
@@ -361,7 +363,7 @@ describe("PATCH /rides/:id/status — state machine", () => {
 
   it("driver can accept a ride (sets driverId)", async () => {
     const passengerToken = await getToken(PASSENGER_PHONE);
-    const driverToken    = await getToken(DRIVER_PHONE);
+    const driverToken = await getToken(DRIVER_PHONE);
     const rideId = await createRide(passengerToken);
 
     // Carlos is the patron driver — his window is open, so he can accept immediately.
@@ -378,7 +380,7 @@ describe("PATCH /rides/:id/status — state machine", () => {
 
   it("rejects invalid transition (searching -> in_progress)", async () => {
     const passengerToken = await getToken(PASSENGER_PHONE);
-    const driverToken    = await getToken(DRIVER_PHONE);
+    const driverToken = await getToken(DRIVER_PHONE);
     const rideId = await createRide(passengerToken);
 
     const res = await app.request(`/rides/${rideId}/status`, {
@@ -393,11 +395,14 @@ describe("PATCH /rides/:id/status — state machine", () => {
 
   it("full lifecycle: searching -> accepted -> driver_en_route -> in_progress -> completed", async () => {
     const passengerToken = await getToken(PASSENGER_PHONE);
-    const driverToken    = await getToken(DRIVER_PHONE);
+    const driverToken = await getToken(DRIVER_PHONE);
     const rideId = await createRide(passengerToken);
 
     const steps: Array<"accepted" | "driver_en_route" | "in_progress" | "completed"> = [
-      "accepted", "driver_en_route", "in_progress", "completed",
+      "accepted",
+      "driver_en_route",
+      "in_progress",
+      "completed",
     ];
 
     for (const step of steps) {
@@ -451,7 +456,7 @@ describe("PATCH /rides/:id/cancel", () => {
 
   it("driver cannot cancel another passenger's ride", async () => {
     const passengerToken = await getToken(PASSENGER_PHONE);
-    const driverToken    = await getToken(DRIVER_PHONE);
+    const driverToken = await getToken(DRIVER_PHONE);
     const rideId = await createRide(passengerToken);
 
     const res = await app.request(`/rides/${rideId}/cancel`, {
@@ -587,7 +592,7 @@ describe("VIP window — patron priority", () => {
     // Create a new passenger without a pre-existing patron
     const newPassengerPhone = "+5511998880001";
     const passengerToken = await getToken(newPassengerPhone);
-    const driverToken    = await getToken(DRIVER_PHONE);
+    const driverToken = await getToken(DRIVER_PHONE);
 
     // Set Carlos as patron for this new passenger
     const setPatronRes = await app.request("/patron", {

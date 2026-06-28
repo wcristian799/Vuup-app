@@ -91,16 +91,10 @@ patronRouter.post("/", zValidator("json", PatronLinkCreateSchema), (c) => {
     return c.json({ code: "NOT_FOUND", message: "Driver not found" }, 404);
   }
   if (driver.role !== "driver" && driver.role !== "motoboy") {
-    return c.json(
-      { code: "INVALID_ROLE", message: "The specified user is not a driver" },
-      400,
-    );
+    return c.json({ code: "INVALID_ROLE", message: "The specified user is not a driver" }, 400);
   }
   if (driver.status !== "active") {
-    return c.json(
-      { code: "DRIVER_INACTIVE", message: "The driver account is not active" },
-      400,
-    );
+    return c.json({ code: "DRIVER_INACTIVE", message: "The driver account is not active" }, 400);
   }
 
   const now = new Date().toISOString();

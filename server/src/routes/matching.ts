@@ -164,9 +164,7 @@ matchingRouter.get("/rides/:id/stream", (c) => {
 
   // Only the ride's passenger and driver (once assigned) can subscribe
   const isParticipant =
-    ride.passengerId === userId ||
-    ride.driverId === userId ||
-    c.get("userRole") === "admin";
+    ride.passengerId === userId || ride.driverId === userId || c.get("userRole") === "admin";
 
   if (!isParticipant) {
     throw new HTTPException(403, { message: "Not a participant in this ride" });
@@ -240,8 +238,7 @@ matchingRouter.get("/rides/:id/disputa", (c) => {
         ? (session.bids.find((b) => b.driverId === userId) ?? null)
         : undefined,
     // Passengers/admins see all bids after resolution
-    bids:
-      (isPassenger || isAdmin) && session.outcome !== "open" ? session.bids : undefined,
+    bids: (isPassenger || isAdmin) && session.outcome !== "open" ? session.bids : undefined,
   };
 
   return c.json(publicSession);

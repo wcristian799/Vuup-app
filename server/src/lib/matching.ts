@@ -80,8 +80,8 @@ export interface SwarmEvent {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 export const DISPUTA_WINDOW_MS = 15_000; // 15 seconds
-export const MAX_BIDS = 5;              // max drivers per dispute
-export const SWARM_THRESHOLD = 3;       // confirmations to activate swarm
+export const MAX_BIDS = 5; // max drivers per dispute
+export const SWARM_THRESHOLD = 3; // confirmations to activate swarm
 
 // ─── In-memory stores ────────────────────────────────────────────────────────
 
@@ -135,7 +135,10 @@ export function getNearbyDrivers(
 ): Array<DriverLocation & { distanceKm: number }> {
   const results: Array<DriverLocation & { distanceKm: number }> = [];
   for (const loc of DRIVER_LOCATIONS.values()) {
-    const d = estimateDistanceKm({ lat: originLat, lng: originLng }, { lat: loc.lat, lng: loc.lng });
+    const d = estimateDistanceKm(
+      { lat: originLat, lng: originLng },
+      { lat: loc.lat, lng: loc.lng },
+    );
     if (d <= radiusKm) results.push({ ...loc, distanceKm: d });
   }
   return results.sort((a, b) => a.distanceKm - b.distanceKm);
