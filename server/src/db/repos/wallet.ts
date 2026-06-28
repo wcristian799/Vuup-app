@@ -17,6 +17,10 @@ function toWallet(row: Record<string, any>): Wallet {
     pendingCents: row["pending_cents"],
     lifetimeEarningsCents: row["lifetime_earnings_cents"],
     updatedAt: row["updated_at"],
+    // Onda 5 campaign-discount fields — not stored in SQLite schema, default to inactive
+    campaignDiscountRemainingDays: 0,
+    campaignDiscountDailyAmountCents: 0,
+    campaignDiscountStartedAt: null,
   };
 }
 
