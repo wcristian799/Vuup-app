@@ -42,6 +42,8 @@ import { TripCard } from "@/components/vuup/TripCard";
 import { PatronoCard } from "@/components/vuup/PatronoCard";
 import { ShieldStatus } from "@/components/vuup/ShieldStatus";
 import { ModeSliderCard } from "@/components/vuup/ModeSliderCard";
+import { DriverDashboard } from "@/components/vuup/DriverDashboard";
+import { DisputeCounterOfferPanel } from "@/components/vuup/DisputeCounterOfferPanel";
 
 export const Route = createFileRoute("/gallery")({
   component: GalleryPage,
@@ -64,6 +66,7 @@ function GalleryPage() {
   );
   const [supermarketMode, setSupermarketMode] = React.useState(false);
   const [earningsValue, setEarningsValue] = React.useState(24350);
+  const [disputeOpen, setDisputeOpen] = React.useState(false);
 
   const COMMUNITY_MEMBERS = [
     { id: "m1", label: "Motorista A1", type: "driver" as const },
@@ -483,8 +486,58 @@ function GalleryPage() {
           </div>
         </Section>
 
+        {/* ── DisputeCounterOfferPanel ── */}
+        <Section title="DisputeCounterOfferPanel">
+          <div className="px-4">
+            <p className="text-xs text-muted-foreground mb-3">
+              Bottom-sheet de contra-oferta em tempo real (disputa de corrida).
+              ARIA completo: role=dialog, aria-modal, focus trap, Escape to close.
+            </p>
+            <Button
+              variant="electric"
+              size="sm"
+              onClick={() => setDisputeOpen(true)}
+              aria-label="Demonstrar painel de disputa de corrida"
+            >
+              Abrir painel de disputa
+            </Button>
+          </div>
+        </Section>
+
+        {/* ── DriverDashboard ── */}
+        <Section title="DriverDashboard (tela completa)">
+          <div className="px-4">
+            <p className="text-xs text-muted-foreground mb-3">
+              Dashboard do motorista/fundador — visível na aba "Perfil" do app principal.
+            </p>
+            <div className="rounded-2xl border border-border bg-surface-2 overflow-hidden" style={{ maxHeight: 480 }}>
+              <div className="overflow-y-auto h-[480px]">
+                <DriverDashboard isPatrono={true} tier="ouro" />
+              </div>
+            </div>
+          </div>
+        </Section>
+
         <div className="h-8" />
       </div>
+
+      {/* ── DriverDashboard full screen ── rendered outside scroll for demo */}
+
+      {/* ── DisputeCounterOfferPanel ── */}
+      <DisputeCounterOfferPanel
+        open={disputeOpen}
+        rideId="demo-ride-001"
+        passengerOffer={2400}
+        currentBid={2200}
+        driversInDispute={3}
+        windowRemainingMs={12000}
+        onSubmitOffer={(amount) => {
+          // eslint-disable-next-line no-console
+          console.log("Offer submitted:", amount);
+          setDisputeOpen(false);
+        }}
+        onClose={() => setDisputeOpen(false)}
+      />
     </main>
   );
 }
