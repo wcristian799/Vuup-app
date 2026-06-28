@@ -40,6 +40,28 @@ git push https://<TOKEN>@github.com/wcristian799/Vuup-app.git integration/all-wa
 # depois abrir PR integration/all-waves -> main pela UI do GitHub
 ```
 
+## Alternativa offline (sem credencial no sandbox)
+
+O sandbox não tem interop Windows nem helper de credencial, então o push tem que
+sair de uma máquina com acesso ao GitHub. Para evitar reconstruir o histórico
+(28 commits / 209 arquivos), foi gerado um **git bundle** com todas as branches:
+
+- Arquivo: `vuup-integration-all-waves.bundle` (~568 KB, histórico completo, verificado com `git bundle verify`).
+- Refs incluídas: `integration/all-waves`, `feature/VUU-40-capacitor-scaffold`, `feature/VUU-2-pwa-scaffold`, `feature/VUU-22-persistent-backend`.
+
+Numa máquina com credencial GitHub:
+
+```bash
+# 1. clonar/atualizar o repo destino
+git clone https://github.com/wcristian799/Vuup-app.git && cd Vuup-app
+# 2. puxar tudo do bundle
+git bundle verify /caminho/vuup-integration-all-waves.bundle
+git fetch /caminho/vuup-integration-all-waves.bundle integration/all-waves:integration/all-waves
+# 3. publicar
+git push origin integration/all-waves
+# depois abrir PR integration/all-waves -> main pela UI do GitHub
+```
+
 ## Conteúdo do PR (resumo por onda)
 
 - Onda 0: scaffold PWA (React 19 + Vite + TanStack Router + Tailwind v4), design system, CI.
