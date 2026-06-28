@@ -12,10 +12,14 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "test:server": "npm --prefix server test",
+    "test:all": "vitest run && npm --prefix server test",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typecheck:server": "npm --prefix server run typecheck",
+    "typecheck:all": "tsc --noEmit && npm --prefix server run typecheck"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

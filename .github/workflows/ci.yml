@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["main", "develop"]
+
+jobs:
+  ci:
+    name: Lint + Typecheck + Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      # ── Frontend (PWA) ──────────────────────────────────────────────────────
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck (frontend)
+        run: npm run typecheck
+
+      - name: Tests (frontend)
+        run: npm test
+
+      # ── Backend (API server) ────────────────────────────────────────────────
+
+      - name: Install server dependencies
+        run: npm ci
+        working-directory: server
+
+      - name: Typecheck (server)
+        run: npm run typecheck
+        working-directory: server
+
+      - name: Tests (server)
+        run: npm test
+        working-directory: server
