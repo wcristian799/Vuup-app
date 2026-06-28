@@ -27,6 +27,7 @@ import { carpoolRouter } from "./routes/carpool.js";
 import { patronRouter } from "./routes/patron.js";
 import { deliveriesRouter } from "./routes/deliveries.js";
 import { campaignsRouter, couponsRouter } from "./routes/campaigns.js";
+import { matchingRouter } from "./routes/matching.js";
 
 const app = new Hono();
 
@@ -71,6 +72,7 @@ app.route("/patron",      patronRouter);      // /patron/*      — protected
 app.route("/deliveries",  deliveriesRouter);  // /deliveries/*  — protected
 app.route("/campaigns",   campaignsRouter);   // /campaigns/*   — protected
 app.route("/coupons",     couponsRouter);     // /coupons/*     — protected
+app.route("/matching",    matchingRouter);    // /matching/*    — protected (Onda 3)
 
 // ─── 404 catch-all ───────────────────────────────────────────────────────────
 

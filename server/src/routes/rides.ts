@@ -19,6 +19,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { RideRequestV2Schema, FareEstimateRequestSchema } from "../models/schemas.js";
 import { calculateFare } from "../lib/pricing.js";
 import type { Modality } from "../models/schemas.js";
+import { openDisputaSession, resolveDisputa } from "../lib/matching.js";
 import { listUsersByRole } from "../db/repos/users.js";
 import {
   findRideById,
@@ -136,6 +137,15 @@ ridesRouter.post("/", zValidator("json", RideRequestV2Schema), (c) => {
     vipWindow = createVipWindow(ride.id, patronLink.driverId);
   }
 
+  // Onda 3: open a Disputa de corrida session (5 drivers, 15s window)
+  openDisputaSession(
+    ride.id,
+    userId,
+    body.origin.lat,
+    body.origin.lng,
+    fareBreakdown.totalCents,
+  );
+
   return c.json(
     {
       ride,
@@ -236,6 +246,9 @@ ridesRouter.patch(
     if (vipWin && vipWin.outcome === "pending") {
       settleVipWindow(ride.id, "expired");
     }
+
+    // Also cancel any open Disputa session
+    resolveDisputa(ride.id, "cancelled");
 
     return c.json(updated);
   },
