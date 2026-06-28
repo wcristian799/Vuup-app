@@ -1,25 +1,64 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Map as MapIcon, Radar, ShieldAlert, Wallet, Layers } from "lucide-react";
+import { Map as MapIcon, Layers, ShieldAlert, User, Wallet } from "lucide-react";
 import { StatusBar } from "@/components/vuup/StatusBar";
+import { MapaVivo } from "@/components/vuup/MapaVivo";
+import { RideSelectorMatrix, type RideTypeKey } from "@/components/vuup/RideSelectorMatrix";
+import { SafetyCenter } from "@/components/vuup/SafetyCenter";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
-  component: VuupHome,
+  component: VuupPassengerApp,
 });
 
-type Tab = "map" | "matrix" | "cockpit" | "radar" | "shield";
+type Tab = "map" | "matrix" | "wallet" | "profile" | "shield";
 
 const TABS: { key: Tab; label: string; icon: typeof MapIcon }[] = [
-  { key: "map", label: "Mapa", icon: MapIcon },
-  { key: "matrix", label: "Matrix", icon: Layers },
-  { key: "cockpit", label: "Cockpit", icon: Wallet },
-  { key: "radar", label: "Radar", icon: Radar },
-  { key: "shield", label: "Escudo", icon: ShieldAlert },
+  { key: "map", label: "Início", icon: MapIcon },
+  { key: "matrix", label: "Corridas", icon: Layers },
+  { key: "wallet", label: "Carteira", icon: Wallet },
+  { key: "profile", label: "Perfil", icon: User },
+  { key: "shield", label: "Segurança", icon: ShieldAlert },
 ];
 
-function VuupHome() {
+// ─── Placeholder screens for non-VUU-4 tabs ──────────────────────────────────
+
+function PlaceholderScreen({ label }: { label: string }) {
+  return (
+    <div className="flex h-full items-center justify-center px-6">
+      <div className="text-center">
+        <p className="text-muted-foreground text-sm">{label}</p>
+        <div className="mt-4">
+          <Link
+            to="/gallery"
+            className="inline-flex items-center gap-1.5 rounded-full border border-electric/40 bg-electric/10 px-4 py-2 text-sm text-electric hover:bg-electric/20 transition-colors"
+          >
+            Ver galeria de componentes →
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main passenger app ───────────────────────────────────────────────────────
+
+function VuupPassengerApp() {
   const [activeTab, setActiveTab] = React.useState<Tab>("map");
+  // When a ride type is confirmed from Matrix, we stash the selection here
+  const [confirmedRide, setConfirmedRide] = React.useState<RideTypeKey | null>(null);
+
+  const handleSelectRide = () => {
+    // Navigate to ride selector tab
+    setActiveTab("matrix");
+  };
+
+  const handleConfirmRide = (rideType: RideTypeKey) => {
+    setConfirmedRide(rideType);
+    // In a full app: kick off ride request flow
+    // For now, return to map tab to show the "ride requested" state
+    setActiveTab("map");
+  };
 
   return (
     <main
@@ -30,21 +69,70 @@ function VuupHome() {
       <StatusBar />
 
       {/* Main content area */}
-      <div className="absolute inset-0 pt-8 pb-20 flex items-center justify-center overflow-y-auto">
-        <div className="text-center px-6">
-          <h1 className="font-display text-4xl font-bold text-electric mb-2">VUUP</h1>
-          <p className="text-muted-foreground text-sm mb-1">Mobilidade urbana viva</p>
-          <p className="text-xs text-muted-foreground/60">
-            Tab ativa: <span className="text-electric font-medium">{activeTab}</span>
-          </p>
-          <div className="mt-6">
-            <Link
-              to="/gallery"
-              className="inline-flex items-center gap-1.5 rounded-full border border-electric/40 bg-electric/10 px-4 py-2 text-sm text-electric hover:bg-electric/20 transition-colors"
-            >
-              Ver galeria de componentes →
-            </Link>
-          </div>
+      <div className="absolute inset-0 pt-8 pb-20 overflow-hidden">
+        {/* Mapa Vivo — home screen */}
+        <div
+          className={cn(
+            "absolute inset-0 pt-8 pb-20 transition-opacity duration-200",
+            activeTab === "map"
+              ? "opacity-100 pointer-events-auto z-10"
+              : "opacity-0 pointer-events-none z-0",
+          )}
+          aria-hidden={activeTab !== "map"}
+        >
+          <MapaVivo onSelectRide={handleSelectRide} />
+        </div>
+
+        {/* Matrix Slider — ride type selector */}
+        <div
+          className={cn(
+            "absolute inset-0 pt-8 pb-20 transition-opacity duration-200",
+            activeTab === "matrix"
+              ? "opacity-100 pointer-events-auto z-10"
+              : "opacity-0 pointer-events-none z-0",
+          )}
+          aria-hidden={activeTab !== "matrix"}
+        >
+          <RideSelectorMatrix onConfirm={handleConfirmRide} destination="Destino selecionado" />
+        </div>
+
+        {/* Safety Center */}
+        <div
+          className={cn(
+            "absolute inset-0 pt-8 pb-20 transition-opacity duration-200",
+            activeTab === "shield"
+              ? "opacity-100 pointer-events-auto z-10"
+              : "opacity-0 pointer-events-none z-0",
+          )}
+          aria-hidden={activeTab !== "shield"}
+        >
+          <SafetyCenter />
+        </div>
+
+        {/* Wallet placeholder */}
+        <div
+          className={cn(
+            "absolute inset-0 pt-8 pb-20 transition-opacity duration-200",
+            activeTab === "wallet"
+              ? "opacity-100 pointer-events-auto z-10"
+              : "opacity-0 pointer-events-none z-0",
+          )}
+          aria-hidden={activeTab !== "wallet"}
+        >
+          <PlaceholderScreen label="Carteira — em breve" />
+        </div>
+
+        {/* Profile placeholder */}
+        <div
+          className={cn(
+            "absolute inset-0 pt-8 pb-20 transition-opacity duration-200",
+            activeTab === "profile"
+              ? "opacity-100 pointer-events-auto z-10"
+              : "opacity-0 pointer-events-none z-0",
+          )}
+          aria-hidden={activeTab !== "profile"}
+        >
+          <PlaceholderScreen label="Perfil — em breve" />
         </div>
       </div>
 
@@ -78,6 +166,39 @@ function VuupHome() {
           })}
         </ul>
       </nav>
+
+      {/* Ride confirmed toast (shown when back on map after confirming) */}
+      {confirmedRide && activeTab === "map" && (
+        <div
+          className={cn(
+            "absolute top-10 inset-x-4 z-50 rounded-2xl border border-neon/40 bg-surface-2 px-4 py-3",
+            "flex items-center gap-3 [box-shadow:0_0_16px_oklch(0.86_0.24_148/0.3)]",
+            "animate-in slide-in-from-top-2 duration-300",
+          )}
+          role="status"
+          aria-live="polite"
+          aria-label={`Corrida ${confirmedRide} confirmada`}
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neon/20 shrink-0">
+            <span className="text-neon text-sm font-bold" aria-hidden="true">
+              ✓
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-neon">Corrida confirmada!</p>
+            <p className="text-xs text-muted-foreground capitalize truncate">
+              {confirmedRide.replace("-", " ")} · Procurando motorista...
+            </p>
+          </div>
+          <button
+            className="text-muted-foreground hover:text-foreground text-lg leading-none shrink-0 -mt-1"
+            onClick={() => setConfirmedRide(null)}
+            aria-label="Fechar notificação"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </main>
   );
 }
