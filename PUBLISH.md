@@ -6,7 +6,7 @@ Este documento permite publicar com **um único comando** assim que o token cheg
 
 ## Estado verificado (28/06/2026)
 
-- Branch: `integration/all-waves` — 27 commits à frente de `origin/main`, 209 arquivos (~35.6k inserções).
+- Branch: `integration/all-waves` — 31 commits à frente de `origin/main`, 209 arquivos (~35.8k inserções). Working tree limpo, CI gate verde.
 - `npm run typecheck` (frontend): ✅ limpo
 - `npm test` (frontend): ✅ 41/41
 - `npm run test:server`: ✅ 165/165
@@ -44,7 +44,7 @@ git push https://<TOKEN>@github.com/wcristian799/Vuup-app.git integration/all-wa
 
 O sandbox não tem interop Windows nem helper de credencial, então o push tem que
 sair de uma máquina com acesso ao GitHub. Para evitar reconstruir o histórico
-(28 commits / 209 arquivos), foi gerado um **git bundle** com todas as branches:
+(31 commits / 209 arquivos), foi gerado um **git bundle** com todas as branches:
 
 - Arquivo: `vuup-integration-all-waves.bundle` (~568 KB, histórico completo, verificado com `git bundle verify`).
 - Refs incluídas: `integration/all-waves`, `feature/VUU-40-capacitor-scaffold`, `feature/VUU-2-pwa-scaffold`, `feature/VUU-22-persistent-backend`.
