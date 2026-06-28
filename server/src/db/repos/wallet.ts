@@ -42,25 +42,25 @@ function toTransaction(row: Record<string, any>): Transaction {
 
 export function findWalletByUserId(userId: string): Wallet | undefined {
   const row = db.prepare("SELECT * FROM wallets WHERE user_id = ?").get(userId) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return row ? toWallet(row) : undefined;
 }
 
 export function findWalletById(id: string): Wallet | undefined {
   const row = db.prepare("SELECT * FROM wallets WHERE id = ?").get(id) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return row ? toWallet(row) : undefined;
 }
 
 export function createWallet(userId: string, initialBalanceCents = 0): Wallet {
   const id = randomUUID();
   const now = new Date().toISOString();
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO wallets (id, user_id, balance_cents, pending_cents, lifetime_earnings_cents, updated_at)
     VALUES (?, ?, ?, 0, 0, ?)
-  `).run(id, userId, initialBalanceCents, now);
+  `,
+  ).run(id, userId, initialBalanceCents, now);
   return findWalletByUserId(userId)!;
 }
 
@@ -101,24 +101,28 @@ const recordTransaction = db.transaction((input: TransactionInput): Transaction 
   const now = new Date().toISOString();
   const id = randomUUID();
 
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE wallets
     SET balance_cents = balance_cents + @delta,
         lifetime_earnings_cents = lifetime_earnings_cents + @lifetime_delta,
         updated_at = @updated_at
     WHERE id = @wallet_id
-  `).run({
+  `,
+  ).run({
     delta: input.amountCents,
     lifetime_delta: input.isEarning && input.amountCents > 0 ? input.amountCents : 0,
     updated_at: now,
     wallet_id: input.walletId,
   });
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO transactions (id, wallet_id, type, amount_cents, balance_after_cents, reference_id, description, created_at)
     SELECT ?, wallet_id, ?, ?, balance_cents, ?, ?, ?
     FROM wallets WHERE id = ?
-  `).run(
+  `,
+  ).run(
     id,
     input.type,
     input.amountCents,
@@ -129,8 +133,7 @@ const recordTransaction = db.transaction((input: TransactionInput): Transaction 
   );
 
   const row = db.prepare("SELECT * FROM transactions WHERE id = ?").get(id) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return toTransaction(row!);
 });
 

@@ -19,9 +19,33 @@ beforeAll(() => {
 
   // Users
   const users = [
-    ["00000000-0000-0000-0000-000000000001", "Ana Costa",      "ana@vuup.app",     "+5511999990001", "passenger", 4.8, 42],
-    ["00000000-0000-0000-0000-000000000002", "Carlos Moto",    "carlos@vuup.app",  "+5511999990002", "driver",    4.9, 327],
-    ["00000000-0000-0000-0000-000000000003", "Roberto Fund.",  "roberto@vuup.app", "+5511999990003", "founder",   null, 0],
+    [
+      "00000000-0000-0000-0000-000000000001",
+      "Ana Costa",
+      "ana@vuup.app",
+      "+5511999990001",
+      "passenger",
+      4.8,
+      42,
+    ],
+    [
+      "00000000-0000-0000-0000-000000000002",
+      "Carlos Moto",
+      "carlos@vuup.app",
+      "+5511999990002",
+      "driver",
+      4.9,
+      327,
+    ],
+    [
+      "00000000-0000-0000-0000-000000000003",
+      "Roberto Fund.",
+      "roberto@vuup.app",
+      "+5511999990003",
+      "founder",
+      null,
+      0,
+    ],
   ];
   const insUser = db.prepare(`
     INSERT OR IGNORE INTO users (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
@@ -34,8 +58,20 @@ beforeAll(() => {
   // Wallets
   const wallets = [
     ["20000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000001", 8750, 0, 0],
-    ["20000000-0000-0000-0000-000000000002", "00000000-0000-0000-0000-000000000002", 124300, 2900, 528000],
-    ["20000000-0000-0000-0000-000000000003", "00000000-0000-0000-0000-000000000003", 312000, 0, 1200000],
+    [
+      "20000000-0000-0000-0000-000000000002",
+      "00000000-0000-0000-0000-000000000002",
+      124300,
+      2900,
+      528000,
+    ],
+    [
+      "20000000-0000-0000-0000-000000000003",
+      "00000000-0000-0000-0000-000000000003",
+      312000,
+      0,
+      1200000,
+    ],
   ];
   const insWallet = db.prepare(`
     INSERT OR IGNORE INTO wallets (id, user_id, balance_cents, pending_cents, lifetime_earnings_cents, updated_at)
@@ -46,40 +82,58 @@ beforeAll(() => {
   }
 
   // Carpool route
-  db.prepare(`
+  db.prepare(
+    `
     INSERT OR IGNORE INTO carpool_routes
       (id, driver_id, name, route_type, stops_json, max_passengers, current_passengers, fare_per_seat, is_active, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
-  `).run(
+  `,
+  ).run(
     "40000000-0000-0000-0000-000000000001",
     "00000000-0000-0000-0000-000000000002",
     "Paulista → Santa Cecília",
     "fixa",
     JSON.stringify([{ lat: -23.5642, lng: -46.6522, address: "Paulista", order: 0 }]),
-    3, 1, 700,
+    3,
+    1,
+    700,
     YESTERDAY,
   );
 
   // Safety event
-  db.prepare(`
+  db.prepare(
+    `
     INSERT OR IGNORE INTO safety_events
       (id, reporter_id, type, location_lat, location_lng, description, is_resolved, upvotes, created_at)
     VALUES (?, ?, ?, ?, ?, ?, 0, 7, ?)
-  `).run(
+  `,
+  ).run(
     "50000000-0000-0000-0000-000000000001",
     "00000000-0000-0000-0000-000000000002",
     "police_checkpoint",
-    -23.549, -46.6388,
+    -23.549,
+    -46.6388,
     "Blitz policial",
     NOW,
   );
 
   // Coupon
-  db.prepare(`
+  db.prepare(
+    `
     INSERT OR IGNORE INTO coupons
       (id, code, discount_type, discount_value, max_usages, usages_count, min_fare_cents, valid_from, valid_until, is_active)
     VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, 1)
-  `).run("70000000-0000-0000-0000-000000000001", "VUUP10", "percent", 10, 1000, 500, YESTERDAY, NEXT_MONTH);
+  `,
+  ).run(
+    "70000000-0000-0000-0000-000000000001",
+    "VUUP10",
+    "percent",
+    10,
+    1000,
+    500,
+    YESTERDAY,
+    NEXT_MONTH,
+  );
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -182,7 +236,14 @@ describe("POST /auth/refresh", () => {
 // ─── Protected routes need auth ───────────────────────────────────────────────
 
 describe("Protected routes — 401 without token", () => {
-  for (const path of ["/users/me", "/wallet", "/rides", "/safety/events", "/carpool/routes", "/deliveries"]) {
+  for (const path of [
+    "/users/me",
+    "/wallet",
+    "/rides",
+    "/safety/events",
+    "/carpool/routes",
+    "/deliveries",
+  ]) {
     it(`GET ${path} returns 401`, async () => {
       const res = await app.request(path);
       expect(res.status).toBe(401);

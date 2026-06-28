@@ -249,10 +249,12 @@ console.log(`Seeded ${RIDES.length} rides`);
 
 // ─── Patron links ─────────────────────────────────────────────────────────────
 
-db.prepare(`
+db.prepare(
+  `
   INSERT OR IGNORE INTO patron_links (id, passenger_id, driver_id, label, is_active, created_at, updated_at)
   VALUES (?, ?, ?, ?, 1, ?, ?)
-`).run(
+`,
+).run(
   "60000000-0000-0000-0000-000000000001",
   "00000000-0000-0000-0000-000000000001",
   "00000000-0000-0000-0000-000000000002",
@@ -305,11 +307,13 @@ console.log(`Seeded ${SAFETY.length} safety events`);
 
 // ─── Carpool routes ───────────────────────────────────────────────────────────
 
-db.prepare(`
+db.prepare(
+  `
   INSERT OR IGNORE INTO carpool_routes
     (id, driver_id, name, route_type, stops_json, max_passengers, current_passengers, fare_per_seat, departure_time, scheduled_at, is_active, created_at)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
-`).run(
+`,
+).run(
   "40000000-0000-0000-0000-000000000001",
   "00000000-0000-0000-0000-000000000002",
   "Paulista → Consolação → Santa Cecília",

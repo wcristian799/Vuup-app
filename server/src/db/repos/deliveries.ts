@@ -35,8 +35,7 @@ function toDelivery(row: Record<string, any>) {
 
 export function findDeliveryById(id: string) {
   const row = db.prepare("SELECT * FROM deliveries WHERE id = ?").get(id) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return row ? toDelivery(row) : undefined;
 }
 
@@ -60,9 +59,7 @@ export function listDeliveriesByMotoboy(motoboyId: string, limit = 20, offset = 
 
 export function listOpenDeliveries(limit = 20) {
   const rows = db
-    .prepare(
-      "SELECT * FROM deliveries WHERE status = 'pending' ORDER BY created_at ASC LIMIT ?",
-    )
+    .prepare("SELECT * FROM deliveries WHERE status = 'pending' ORDER BY created_at ASC LIMIT ?")
     .all(limit) as Record<string, unknown>[];
   return rows.map(toDelivery);
 }
@@ -79,7 +76,8 @@ export interface CreateDeliveryInput {
 export function createDelivery(input: CreateDeliveryInput) {
   const id = randomUUID();
   const now = new Date().toISOString();
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO deliveries (
       id, client_id, status,
       pickup_lat, pickup_lng, pickup_address, pickup_contact_name,
@@ -93,7 +91,8 @@ export function createDelivery(input: CreateDeliveryInput) {
       @package_description, @estimated_distance_km, @fare_estimate,
       @created_at, @updated_at
     )
-  `).run({
+  `,
+  ).run({
     id,
     client_id: input.clientId,
     pickup_lat: input.pickup.lat,
@@ -114,12 +113,7 @@ export function createDelivery(input: CreateDeliveryInput) {
 }
 
 export type DeliveryStatus =
-  | "pending"
-  | "accepted"
-  | "picked_up"
-  | "in_transit"
-  | "delivered"
-  | "failed";
+  "pending" | "accepted" | "picked_up" | "in_transit" | "delivered" | "failed";
 
 export function updateDeliveryStatus(
   id: string,
@@ -128,14 +122,16 @@ export function updateDeliveryStatus(
   fareActual?: number,
 ) {
   const now = new Date().toISOString();
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE deliveries
     SET status = @status,
         motoboy_id = COALESCE(@motoboy_id, motoboy_id),
         fare_actual = COALESCE(@fare_actual, fare_actual),
         updated_at = @updated_at
     WHERE id = @id
-  `).run({
+  `,
+  ).run({
     id,
     status,
     motoboy_id: motoboyId ?? null,

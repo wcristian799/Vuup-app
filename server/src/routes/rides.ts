@@ -102,7 +102,8 @@ ridesRouter.post("/", zValidator("json", RideRequestV2Schema), (c) => {
     throw new HTTPException(403, { message: "Only passengers can request rides" });
   }
 
-  const modality: Modality = (body.modality as Modality | undefined) ?? (body.routeType as Modality);
+  const modality: Modality =
+    (body.modality as Modality | undefined) ?? (body.routeType as Modality);
 
   const coupon = body.couponCode ? findCouponByCode(body.couponCode) : undefined;
   if (body.couponCode && !coupon) {
@@ -138,13 +139,7 @@ ridesRouter.post("/", zValidator("json", RideRequestV2Schema), (c) => {
   }
 
   // Onda 3: open a Disputa de corrida session (5 drivers, 15s window)
-  openDisputaSession(
-    ride.id,
-    userId,
-    body.origin.lat,
-    body.origin.lng,
-    fareBreakdown.totalCents,
-  );
+  openDisputaSession(ride.id, userId, body.origin.lat, body.origin.lng, fareBreakdown.totalCents);
 
   return c.json(
     {

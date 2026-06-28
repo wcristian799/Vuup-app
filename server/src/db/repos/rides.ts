@@ -57,16 +57,13 @@ function toVipWindow(row: Record<string, any>) {
 
 export function findRideById(id: string) {
   const row = db.prepare("SELECT * FROM rides WHERE id = ?").get(id) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return row ? toRide(row) : undefined;
 }
 
 export function listRidesByPassenger(passengerId: string, limit = 20, offset = 0) {
   const rows = db
-    .prepare(
-      "SELECT * FROM rides WHERE passenger_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
-    )
+    .prepare("SELECT * FROM rides WHERE passenger_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?")
     .all(passengerId, limit, offset) as Record<string, unknown>[];
   return rows.map(toRide);
 }
@@ -86,9 +83,9 @@ export function countRidesByPassenger(passengerId: string): number {
 }
 
 export function countRidesByDriver(driverId: string): number {
-  const r = db
-    .prepare("SELECT COUNT(*) as cnt FROM rides WHERE driver_id = ?")
-    .get(driverId) as { cnt: number };
+  const r = db.prepare("SELECT COUNT(*) as cnt FROM rides WHERE driver_id = ?").get(driverId) as {
+    cnt: number;
+  };
   return r.cnt;
 }
 
@@ -110,7 +107,8 @@ export interface CreateRideInput {
 export function createRide(input: CreateRideInput) {
   const id = randomUUID();
   const now = new Date().toISOString();
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO rides (
       id, passenger_id, route_type, status,
       origin_lat, origin_lng, origin_address,
@@ -126,7 +124,8 @@ export function createRide(input: CreateRideInput) {
       @fare_estimate, @coupon_code, @coupon_discount_cents,
       @scheduled_at, @fare_breakdown_json, @created_at, @updated_at
     )
-  `).run({
+  `,
+  ).run({
     id,
     passenger_id: input.passengerId,
     route_type: input.routeType,
@@ -164,7 +163,8 @@ export function updateRideStatus(id: string, updates: UpdateRideStatusInput) {
   const existing = findRideById(id);
   if (!existing) return undefined;
 
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE rides SET
       status = @status,
       driver_id = @driver_id,
@@ -175,7 +175,8 @@ export function updateRideStatus(id: string, updates: UpdateRideStatusInput) {
       fare_actual = @fare_actual,
       updated_at = @updated_at
     WHERE id = @id
-  `).run({
+  `,
+  ).run({
     id,
     status: updates.status,
     driver_id: updates.driverId !== undefined ? updates.driverId : existing.driverId,
@@ -196,15 +197,15 @@ export function updateRideStatus(id: string, updates: UpdateRideStatusInput) {
 
 export function findVipWindowByRide(rideId: string) {
   const row = db.prepare("SELECT * FROM vip_windows WHERE ride_id = ?").get(rideId) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return row ? toVipWindow(row) : undefined;
 }
 
 export function createVipWindow(rideId: string, patronDriverId: string) {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 15_000).toISOString();
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO vip_windows (ride_id, patron_driver_id, window_opens_at, window_expires_at, outcome)
     VALUES (?, ?, ?, ?, 'pending')
     ON CONFLICT(ride_id) DO UPDATE SET
@@ -212,7 +213,8 @@ export function createVipWindow(rideId: string, patronDriverId: string) {
       window_opens_at = excluded.window_opens_at,
       window_expires_at = excluded.window_expires_at,
       outcome = 'pending'
-  `).run(rideId, patronDriverId, now.toISOString(), expiresAt);
+  `,
+  ).run(rideId, patronDriverId, now.toISOString(), expiresAt);
   return findVipWindowByRide(rideId)!;
 }
 
@@ -251,16 +253,11 @@ export function findPatronLinksByDriver(driverId: string) {
 
 export function findPatronLinkById(id: string) {
   const row = db.prepare("SELECT * FROM patron_links WHERE id = ?").get(id) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return row ? toPatronLink(row) : undefined;
 }
 
-export function createPatronLink(
-  passengerId: string,
-  driverId: string,
-  label: string,
-) {
+export function createPatronLink(passengerId: string, driverId: string, label: string) {
   const now = new Date().toISOString();
   // Deactivate existing links for this passenger
   db.prepare(
@@ -268,20 +265,18 @@ export function createPatronLink(
   ).run(now, passengerId);
 
   const id = randomUUID();
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO patron_links (id, passenger_id, driver_id, label, is_active, created_at, updated_at)
     VALUES (?, ?, ?, ?, 1, ?, ?)
-  `).run(id, passengerId, driverId, label, now, now);
+  `,
+  ).run(id, passengerId, driverId, label, now, now);
   return findPatronLinkById(id)!;
 }
 
 export function updatePatronLink(id: string, label: string) {
   const now = new Date().toISOString();
-  db.prepare("UPDATE patron_links SET label = ?, updated_at = ? WHERE id = ?").run(
-    label,
-    now,
-    id,
-  );
+  db.prepare("UPDATE patron_links SET label = ?, updated_at = ? WHERE id = ?").run(label, now, id);
   return findPatronLinkById(id);
 }
 

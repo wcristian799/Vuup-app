@@ -36,10 +36,10 @@ export const ALERT_RADIUS_M = 1_500;
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type ShieldPhase =
-  | "idle"       // not armed
-  | "holding"    // user is pressing the panic button
-  | "consent"    // hold threshold reached; awaiting LGPD consent
-  | "armed"      // shield is active
+  | "idle" // not armed
+  | "holding" // user is pressing the panic button
+  | "consent" // hold threshold reached; awaiting LGPD consent
+  | "armed" // shield is active
   | "disarming"; // cleanup in progress
 
 export type LgpdConsent = {
@@ -52,7 +52,7 @@ export type ShieldState = {
   phase: ShieldPhase;
   consent: LgpdConsent | null;
   holdProgressPercent: number; // 0-100 while holding
-  alertCount: number;          // community confirmations sent this session
+  alertCount: number; // community confirmations sent this session
   armedAt: string | null;
   /** Start holding the panic button. */
   startHold: () => void;
@@ -63,7 +63,10 @@ export type ShieldState = {
    * Must be called when phase === "consent".
    * Calls POST /matching/swarm to broadcast the panic event.
    */
-  grantConsentAndArm: (consent: { includesAvStream: boolean; includesGps: boolean }) => Promise<void>;
+  grantConsentAndArm: (consent: {
+    includesAvStream: boolean;
+    includesGps: boolean;
+  }) => Promise<void>;
   /** Manually disarm the shield. Clears all streams and consent. */
   disarm: () => void;
 };

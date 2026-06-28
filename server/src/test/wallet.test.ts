@@ -29,10 +29,50 @@ beforeAll(() => {
       (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
   `);
-  insUser.run("00000000-0000-0000-0000-000000000001", "Ana Costa",       "ana@vuup.app",     "+5511999990001", "passenger", 4.8, 42,  YESTERDAY, NOW);
-  insUser.run("00000000-0000-0000-0000-000000000002", "Carlos Moto",     "carlos@vuup.app",  "+5511999990002", "driver",    4.9, 327, YESTERDAY, NOW);
-  insUser.run("00000000-0000-0000-0000-000000000003", "Roberto Fundador","roberto@vuup.app", "+5511999990003", "founder",   4.7, 15,  YESTERDAY, NOW);
-  insUser.run("00000000-0000-0000-0000-000000000099", "Admin",           "admin@vuup.app",   "+5511999990099", "admin",     5.0, 0,   YESTERDAY, NOW);
+  insUser.run(
+    "00000000-0000-0000-0000-000000000001",
+    "Ana Costa",
+    "ana@vuup.app",
+    "+5511999990001",
+    "passenger",
+    4.8,
+    42,
+    YESTERDAY,
+    NOW,
+  );
+  insUser.run(
+    "00000000-0000-0000-0000-000000000002",
+    "Carlos Moto",
+    "carlos@vuup.app",
+    "+5511999990002",
+    "driver",
+    4.9,
+    327,
+    YESTERDAY,
+    NOW,
+  );
+  insUser.run(
+    "00000000-0000-0000-0000-000000000003",
+    "Roberto Fundador",
+    "roberto@vuup.app",
+    "+5511999990003",
+    "founder",
+    4.7,
+    15,
+    YESTERDAY,
+    NOW,
+  );
+  insUser.run(
+    "00000000-0000-0000-0000-000000000099",
+    "Admin",
+    "admin@vuup.app",
+    "+5511999990099",
+    "admin",
+    5.0,
+    0,
+    YESTERDAY,
+    NOW,
+  );
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -57,8 +97,8 @@ function authHeader(token: string) {
 }
 
 const PASSENGER_PHONE = "+5511999990001"; // Ana — passenger
-const DRIVER_PHONE = "+5511999990002";    // Carlos — driver (has active campaign discount)
-const FOUNDER_PHONE = "+5511999990003";  // Roberto — founder (platinum)
+const DRIVER_PHONE = "+5511999990002"; // Carlos — driver (has active campaign discount)
+const FOUNDER_PHONE = "+5511999990003"; // Roberto — founder (platinum)
 
 // Helper: reset wallet balance between tests that mutate it
 function resetWallets() {

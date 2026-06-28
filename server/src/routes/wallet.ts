@@ -60,14 +60,15 @@ walletRouter.get("/", (c) => {
     passiveIncomeSharePercent,
     sociedadeNivel: sociedade?.nivel ?? "starter",
     // Include campaign discount summary
-    campaignDiscount: wallet.campaignDiscountRemainingDays > 0
-      ? {
-          remainingDays: wallet.campaignDiscountRemainingDays,
-          dailyAmountCents: wallet.campaignDiscountDailyAmountCents,
-          totalRemainingCents:
-            wallet.campaignDiscountRemainingDays * wallet.campaignDiscountDailyAmountCents,
-        }
-      : null,
+    campaignDiscount:
+      wallet.campaignDiscountRemainingDays > 0
+        ? {
+            remainingDays: wallet.campaignDiscountRemainingDays,
+            dailyAmountCents: wallet.campaignDiscountDailyAmountCents,
+            totalRemainingCents:
+              wallet.campaignDiscountRemainingDays * wallet.campaignDiscountDailyAmountCents,
+          }
+        : null,
   });
 });
 
@@ -182,7 +183,15 @@ walletRouter.post("/transfer", zValidator("json", WalletTransferRequestSchema), 
     fromWallet.updatedAt = now;
   }
 
-  return c.json({ transfer, message: isScheduled ? "Transferência agendada com sucesso" : "Transferência realizada com sucesso" }, 201);
+  return c.json(
+    {
+      transfer,
+      message: isScheduled
+        ? "Transferência agendada com sucesso"
+        : "Transferência realizada com sucesso",
+    },
+    201,
+  );
 });
 
 // ─── GET /wallet/transfers ────────────────────────────────────────────────────
@@ -318,10 +327,7 @@ walletRouter.post("/campaign-discount/apply", (c) => {
   if (campaignDiscount.daysRemaining <= 0) {
     campaignDiscount.isActive = false;
     campaignDiscount.completedAt = new Date().toISOString();
-    return c.json(
-      { code: "CAMPAIGN_COMPLETED", message: "Campanha já concluída" },
-      422,
-    );
+    return c.json({ code: "CAMPAIGN_COMPLETED", message: "Campanha já concluída" }, 422);
   }
 
   const wallet = findWalletByUserId(userId);
@@ -354,9 +360,10 @@ walletRouter.post("/campaign-discount/apply", (c) => {
   return c.json({
     campaignDiscount,
     creditedCents: campaignDiscount.dailyAmountCents,
-    message: campaignDiscount.daysRemaining === 0
-      ? `Última aplicação! Campanha concluída. Total creditado: R$${(campaignDiscount.totalCreditedCents / 100).toFixed(2)}`
-      : `Desconto aplicado: R$${(campaignDiscount.dailyAmountCents / 100).toFixed(2)}. Dias restantes: ${campaignDiscount.daysRemaining}`,
+    message:
+      campaignDiscount.daysRemaining === 0
+        ? `Última aplicação! Campanha concluída. Total creditado: R$${(campaignDiscount.totalCreditedCents / 100).toFixed(2)}`
+        : `Desconto aplicado: R$${(campaignDiscount.dailyAmountCents / 100).toFixed(2)}. Dias restantes: ${campaignDiscount.daysRemaining}`,
   });
 });
 
@@ -481,9 +488,10 @@ walletRouter.post(
     return c.json(
       {
         payment: gatewayTx,
-        message: method === "wallet"
-          ? "Pagamento debitado da Carteira Vuup"
-          : `Pagamento aprovado via ${method === "pix" ? "Pix" : "cartão de crédito"} (gateway stub)`,
+        message:
+          method === "wallet"
+            ? "Pagamento debitado da Carteira Vuup"
+            : `Pagamento aprovado via ${method === "pix" ? "Pix" : "cartão de crédito"} (gateway stub)`,
       },
       201,
     );

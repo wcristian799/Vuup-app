@@ -59,15 +59,24 @@ export type LgpdConsent = {
 
 export type ServerFrame =
   | { type: "connected"; data: { ts: string } }
-  | { type: "disputa_opened"; data: { rideId: string; windowExpiresAt: string; fareEstimateCents: number } }
+  | {
+      type: "disputa_opened";
+      data: { rideId: string; windowExpiresAt: string; fareEstimateCents: number };
+    }
   | { type: "bid_received"; data: DisputeCandidate }
   | { type: "disputa_resolved"; data: { rideId: string; outcome: string; winnerId: string | null } }
-  | { type: "ride_assigned"; data: { rideId: string; passengerId: string; fareEstimateCents: number } }
+  | {
+      type: "ride_assigned";
+      data: { rideId: string; passengerId: string; fareEstimateCents: number };
+    }
   | { type: "dispute_error"; data: { code: string; message: string } }
   /** Swarm / panic frames — delivered on the swarm stream */
   | { type: "swarm_event_created"; data: SwarmEventPayload }
   | { type: "swarm_confirmed"; data: { id: string; confirmCount: number; swarmActive: boolean } }
-  | { type: "swarm_activated"; data: { id: string; lat: number; lng: number; confirmCount: number; description: string } }
+  | {
+      type: "swarm_activated";
+      data: { id: string; lat: number; lng: number; confirmCount: number; description: string };
+    }
   | { type: "swarm_resolved"; data: { id: string } };
 
 export type SwarmEventPayload = {
@@ -93,7 +102,7 @@ const HIGH_PRIORITY_EVENTS = new Set<ServerFrame["type"]>([
 // ─── Event listener map ───────────────────────────────────────────────────────
 
 type EventHandler<T extends ServerFrame["type"]> = (
-  payload: Extract<ServerFrame, { type: T }>["data"]
+  payload: Extract<ServerFrame, { type: T }>["data"],
 ) => void;
 
 type ListenerMap = {

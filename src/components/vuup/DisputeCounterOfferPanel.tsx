@@ -251,8 +251,8 @@ export function DisputeCounterOfferPanel({
                   <Users size={13} className="text-muted-foreground" aria-hidden="true" />
                 </div>
                 <span className="text-sm text-muted-foreground">
-                  <span className="font-semibold text-foreground">{driversInDispute}</span> motoristas
-                  disputando esta corrida
+                  <span className="font-semibold text-foreground">{driversInDispute}</span>{" "}
+                  motoristas disputando esta corrida
                 </span>
               </div>
 

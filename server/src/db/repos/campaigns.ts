@@ -29,15 +29,13 @@ function toCoupon(row: Record<string, any>): Coupon {
 
 export function findCouponByCode(code: string): Coupon | undefined {
   const row = db.prepare("SELECT * FROM coupons WHERE code = ?").get(code.toUpperCase()) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return row ? toCoupon(row) : undefined;
 }
 
 export function findCouponById(id: string): Coupon | undefined {
   const row = db.prepare("SELECT * FROM coupons WHERE id = ?").get(id) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return row ? toCoupon(row) : undefined;
 }
 
@@ -67,7 +65,8 @@ export interface CreateCouponInput {
 
 export function createCoupon(input: CreateCouponInput): Coupon {
   const id = randomUUID();
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO coupons (
       id, code, campaign_id, discount_type, discount_value,
       max_usages, usages_count, min_fare_cents,
@@ -77,7 +76,8 @@ export function createCoupon(input: CreateCouponInput): Coupon {
       @max_usages, 0, @min_fare_cents,
       @valid_from, @valid_until, 1
     )
-  `).run({
+  `,
+  ).run({
     id,
     code: input.code.toUpperCase(),
     campaign_id: input.campaignId ?? null,
@@ -99,9 +99,9 @@ export function redeemCoupon(code: string): boolean {
   if (now < coupon.validFrom || now > coupon.validUntil) return false;
   if (coupon.maxUsages !== null && coupon.usagesCount >= coupon.maxUsages) return false;
 
-  db.prepare(
-    "UPDATE coupons SET usages_count = usages_count + 1 WHERE code = ?",
-  ).run(code.toUpperCase());
+  db.prepare("UPDATE coupons SET usages_count = usages_count + 1 WHERE code = ?").run(
+    code.toUpperCase(),
+  );
   return true;
 }
 
@@ -130,8 +130,7 @@ function toCampaign(row: Record<string, any>): Campaign {
 
 export function findCampaignById(id: string): Campaign | undefined {
   const row = db.prepare("SELECT * FROM campaigns WHERE id = ?").get(id) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return row ? toCampaign(row) : undefined;
 }
 
@@ -147,9 +146,10 @@ export function listAllCampaigns(status?: string): Campaign[] {
     ? (db
         .prepare("SELECT * FROM campaigns WHERE status = ? ORDER BY created_at DESC")
         .all(status) as Record<string, unknown>[])
-    : (db
-        .prepare("SELECT * FROM campaigns ORDER BY created_at DESC")
-        .all() as Record<string, unknown>[]);
+    : (db.prepare("SELECT * FROM campaigns ORDER BY created_at DESC").all() as Record<
+        string,
+        unknown
+      >[]);
   return rows.map(toCampaign);
 }
 
@@ -165,7 +165,8 @@ export interface CreateCampaignInput {
 export function createCampaign(input: CreateCampaignInput): Campaign {
   const id = randomUUID();
   const now = new Date().toISOString();
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO campaigns (
       id, client_id, name, status,
       target_audience, budget_cents, spent_cents, impressions, clicks,
@@ -175,7 +176,8 @@ export function createCampaign(input: CreateCampaignInput): Campaign {
       @target_audience, @budget_cents, 0, 0, 0,
       '[]', @starts_at, @ends_at, @created_at
     )
-  `).run({
+  `,
+  ).run({
     id,
     client_id: input.clientId,
     name: input.name,

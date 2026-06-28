@@ -31,22 +31,27 @@ function toUser(row: Record<string, any>): User {
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export function findUserById(id: string): User | undefined {
-  const row = db.prepare("SELECT * FROM users WHERE id = ?").get(id) as Record<string, unknown> | undefined;
+  const row = db.prepare("SELECT * FROM users WHERE id = ?").get(id) as
+    Record<string, unknown> | undefined;
   return row ? toUser(row) : undefined;
 }
 
 export function findUserByPhone(phone: string): User | undefined {
-  const row = db.prepare("SELECT * FROM users WHERE phone = ?").get(phone) as Record<string, unknown> | undefined;
+  const row = db.prepare("SELECT * FROM users WHERE phone = ?").get(phone) as
+    Record<string, unknown> | undefined;
   return row ? toUser(row) : undefined;
 }
 
 export function findUserByEmail(email: string): User | undefined {
-  const row = db.prepare("SELECT * FROM users WHERE email = ?").get(email) as Record<string, unknown> | undefined;
+  const row = db.prepare("SELECT * FROM users WHERE email = ?").get(email) as
+    Record<string, unknown> | undefined;
   return row ? toUser(row) : undefined;
 }
 
 export function listAllUsers(): User[] {
-  return (db.prepare("SELECT * FROM users ORDER BY created_at").all() as Record<string, unknown>[]).map(toUser);
+  return (
+    db.prepare("SELECT * FROM users ORDER BY created_at").all() as Record<string, unknown>[]
+  ).map(toUser);
 }
 
 export function listUsersByRole(role: string): User[] {
@@ -70,14 +75,16 @@ export interface CreateUserInput {
 export function createUser(input: CreateUserInput): User {
   const now = new Date().toISOString();
   const id = input.id ?? randomUUID();
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO users (id, full_name, email, phone, role, status,
                        avatar_url, document_number, rating, total_rides,
                        created_at, updated_at)
     VALUES (@id, @full_name, @email, @phone, @role, @status,
             @avatar_url, @document_number, @rating, @total_rides,
             @created_at, @updated_at)
-  `).run({
+  `,
+  ).run({
     id,
     full_name: input.fullName,
     email: input.email,
@@ -100,13 +107,15 @@ export function updateUser(
 ): User | undefined {
   const existing = findUserById(id);
   if (!existing) return undefined;
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE users
     SET full_name = @full_name,
         avatar_url = @avatar_url,
         updated_at = @updated_at
     WHERE id = @id
-  `).run({
+  `,
+  ).run({
     id,
     full_name: updates.fullName ?? existing.fullName,
     avatar_url: updates.avatarUrl !== undefined ? updates.avatarUrl : existing.avatarUrl,
