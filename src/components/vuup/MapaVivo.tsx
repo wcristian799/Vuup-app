@@ -1,11 +1,16 @@
 import * as React from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
-import { MapPin, Navigation, Search, ChevronUp } from "lucide-react";
+import { MapPin, Navigation, Search, ChevronUp, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
+import {
+  searchAddress,
+  QUICK_ADDRESS_QUERIES,
+  type GeocodingResult,
+} from "@/lib/geocoding";
 
 // ─── Fix Leaflet default icon paths broken by bundlers ────────────────────────
 
@@ -64,6 +69,29 @@ const userIcon = L.divIcon({
   className: "",
   iconSize: [24, 24],
   iconAnchor: [12, 12],
+});
+
+// ─── Destination pin icon ─────────────────────────────────────────────────────
+
+const DEST_ICON_HTML = `
+  <div style="
+    width:32px;height:32px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:oklch(0.86 0.24 148);
+    box-shadow:0 0 14px oklch(0.86 0.24 148 / 0.7);
+  ">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+    </svg>
+  </div>
+`;
+
+const destIcon = L.divIcon({
+  html: DEST_ICON_HTML,
+  className: "",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
 });
 
 // ─── Default coordinates (São Paulo downtown) ─────────────────────────────────
@@ -125,14 +153,113 @@ function CostBubble({ bubble }: { bubble: RideCostBubble }) {
   );
 }
 
-// ─── Bottom search/action panel ───────────────────────────────────────────────
+// ─── Bottom search/action panel with autocomplete ─────────────────────────────
 
 interface BottomPanelProps {
   onSelectRide: () => void;
+  onDestinationChange: (result: GeocodingResult | null) => void;
+  destination: GeocodingResult | null;
 }
 
-function BottomPanel({ onSelectRide }: BottomPanelProps) {
-  const [address, setAddress] = React.useState("");
+function BottomPanel({ onSelectRide, onDestinationChange, destination }: BottomPanelProps) {
+  const [inputValue, setInputValue] = React.useState(destination?.shortLabel ?? "");
+  const [suggestions, setSuggestions] = React.useState<GeocodingResult[]>([]);
+  const [isSearching, setIsSearching] = React.useState(false);
+  const [quickLoading, setQuickLoading] = React.useState<string | null>(null);
+  const [showSuggestions, setShowSuggestions] = React.useState(false);
+
+  // AbortController ref to cancel in-flight Nominatim requests
+  const abortRef = React.useRef<AbortController | null>(null);
+  // Debounce timer
+  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // If a destination was already selected and user sees the panel again, reflect it
+  React.useEffect(() => {
+    if (destination) setInputValue(destination.shortLabel);
+  }, [destination]);
+
+  function handleInputChange(value: string) {
+    setInputValue(value);
+
+    // If cleared, reset destination
+    if (!value.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      onDestinationChange(null);
+      return;
+    }
+
+    // Debounce 300 ms before firing Nominatim
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      void fetchSuggestions(value);
+    }, 300);
+  }
+
+  async function fetchSuggestions(query: string) {
+    // Cancel previous in-flight request
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
+    setIsSearching(true);
+    try {
+      const results = await searchAddress(query, ctrl.signal);
+      if (!ctrl.signal.aborted) {
+        setSuggestions(results);
+        setShowSuggestions(results.length > 0);
+      }
+    } catch (err) {
+      // Abort errors are expected; anything else log silently
+      if (err instanceof Error && err.name !== "AbortError") {
+        console.warn("[MapaVivo] Geocoding error:", err.message);
+      }
+    } finally {
+      if (!ctrl.signal.aborted) setIsSearching(false);
+    }
+  }
+
+  function selectSuggestion(result: GeocodingResult) {
+    setInputValue(result.shortLabel);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    onDestinationChange(result);
+  }
+
+  function clearDestination() {
+    setInputValue("");
+    setSuggestions([]);
+    setShowSuggestions(false);
+    onDestinationChange(null);
+    abortRef.current?.abort();
+  }
+
+  async function handleQuickAddress(label: string) {
+    const query = QUICK_ADDRESS_QUERIES[label] ?? label;
+    setQuickLoading(label);
+    setInputValue(label);
+    try {
+      const results = await searchAddress(query);
+      if (results[0]) {
+        const top = { ...results[0], shortLabel: label };
+        selectSuggestion(top);
+      }
+    } catch {
+      // silently ignore
+    } finally {
+      setQuickLoading(null);
+    }
+  }
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  const canConfirm = destination !== null;
 
   return (
     <div
@@ -144,55 +271,132 @@ function BottomPanel({ onSelectRide }: BottomPanelProps) {
 
       {/* Address search */}
       <p className="text-xs text-muted-foreground mb-2 font-medium">Para onde vamos?</p>
-      <div className="relative mb-3">
+      <div className="relative mb-1">
         <Search
           size={16}
           className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
+        {isSearching ? (
+          <Loader2
+            size={14}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin"
+            aria-hidden="true"
+          />
+        ) : inputValue ? (
+          <button
+            onClick={clearDestination}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Limpar destino"
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
+        ) : null}
         <input
           type="text"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
+          value={inputValue}
+          onChange={(e) => handleInputChange(e.target.value)}
+          onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+          onBlur={() => {
+            // Small delay so click on suggestion registers before hiding
+            setTimeout(() => setShowSuggestions(false), 150);
+          }}
           placeholder="Buscar destino..."
           aria-label="Buscar destino"
+          aria-autocomplete="list"
+          aria-expanded={showSuggestions}
+          aria-controls="autocomplete-suggestions"
+          role="combobox"
           className={cn(
-            "w-full rounded-xl border border-border bg-surface-2",
-            "pl-9 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground",
-            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 focus:ring-offset-card",
+            "w-full rounded-xl border bg-surface-2",
+            "pl-9 pr-8 py-2.5 text-sm text-foreground placeholder:text-muted-foreground",
+            "focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-card",
+            destination
+              ? "border-neon/60 focus:ring-neon"
+              : "border-border focus:ring-ring",
           )}
         />
       </div>
 
-      {/* Quick address suggestions */}
-      <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-none">
-        {["Casa", "Trabalho", "Aeroporto", "Shopping"].map((place) => (
+      {/* Autocomplete suggestions dropdown */}
+      {showSuggestions && (
+        <ul
+          id="autocomplete-suggestions"
+          role="listbox"
+          aria-label="Sugestões de endereço"
+          className={cn(
+            "absolute inset-x-4 z-[1010] mt-1 rounded-xl border border-border",
+            "bg-card/95 backdrop-blur-md shadow-xl overflow-hidden",
+          )}
+        >
+          {suggestions.map((result) => (
+            <li key={result.placeId} role="option" aria-selected={destination?.placeId === result.placeId}>
+              <button
+                className={cn(
+                  "w-full flex items-start gap-2.5 px-3 py-2.5 text-left",
+                  "hover:bg-surface-2 transition-colors",
+                  "focus-visible:outline-none focus-visible:bg-surface-2",
+                )}
+                onMouseDown={(e) => {
+                  e.preventDefault(); // prevent onBlur before click fires
+                  selectSuggestion(result);
+                }}
+              >
+                <MapPin size={14} className="text-neon mt-0.5 shrink-0" aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{result.shortLabel}</p>
+                  <p className="text-xs text-muted-foreground truncate">{result.label}</p>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Quick address chips */}
+      <div className="flex gap-2 mt-2 mb-3 overflow-x-auto scrollbar-none">
+        {Object.keys(QUICK_ADDRESS_QUERIES).map((place) => (
           <button
             key={place}
-            onClick={() => setAddress(place)}
+            onClick={() => { void handleQuickAddress(place); }}
+            disabled={quickLoading !== null}
             className={cn(
-              "flex-shrink-0 flex items-center gap-1.5 rounded-full border border-border bg-surface-3",
-              "px-3 py-1.5 text-xs text-foreground hover:border-electric hover:text-electric transition-colors",
+              "flex-shrink-0 flex items-center gap-1.5 rounded-full border bg-surface-3",
+              "px-3 py-1.5 text-xs text-foreground transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              destination?.shortLabel === place
+                ? "border-neon text-neon"
+                : "border-border hover:border-electric hover:text-electric",
             )}
             aria-label={`Ir para ${place}`}
+            aria-pressed={destination?.shortLabel === place}
           >
-            <MapPin size={10} aria-hidden="true" />
+            {quickLoading === place ? (
+              <Loader2 size={10} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <MapPin size={10} aria-hidden="true" />
+            )}
             {place}
           </button>
         ))}
       </div>
 
-      {/* CTA */}
+      {/* CTA — disabled until a destination is fixed */}
       <Button
         variant="electric"
         size="xl"
         className="w-full rounded-2xl"
         onClick={onSelectRide}
-        aria-label="Escolher tipo de corrida"
+        disabled={!canConfirm}
+        aria-label={
+          canConfirm
+            ? `Escolher tipo de corrida para ${destination!.shortLabel}`
+            : "Selecione um destino para continuar"
+        }
       >
         <Navigation size={18} aria-hidden="true" />
-        Escolher corrida
+        {canConfirm ? `Ir para ${destination!.shortLabel}` : "Selecione um destino"}
         <ChevronUp size={16} aria-hidden="true" />
       </Button>
     </div>
@@ -230,14 +434,21 @@ function MapFABs({ onRecenter }: MapFABsProps) {
 
 // ─── MapaVivo screen ──────────────────────────────────────────────────────────
 
+export interface SelectedDestination {
+  lat: number;
+  lng: number;
+  label: string;
+}
+
 interface MapaVivoProps {
-  onSelectRide: () => void;
+  onSelectRide: (destination: SelectedDestination | null) => void;
 }
 
 export function MapaVivo({ onSelectRide }: MapaVivoProps) {
   const [userPosition, setUserPosition] = React.useState<[number, number] | null>(null);
   const [mapCenter, setMapCenter] = React.useState<[number, number]>(DEFAULT_POSITION);
   const [recenterTrigger, setRecenterTrigger] = React.useState(0);
+  const [destination, setDestination] = React.useState<GeocodingResult | null>(null);
 
   // Geolocation: request once on mount, fallback to default if denied/unavailable
   React.useEffect(() => {
@@ -273,6 +484,23 @@ export function MapaVivo({ onSelectRide }: MapaVivoProps) {
     }
   }
 
+  function handleDestinationChange(result: GeocodingResult | null) {
+    setDestination(result);
+    if (result) {
+      // Fly map to show destination
+      setMapCenter([result.lat, result.lng]);
+      setRecenterTrigger((t) => t + 1);
+    }
+  }
+
+  function handleSelectRide() {
+    onSelectRide(
+      destination
+        ? { lat: destination.lat, lng: destination.lng, label: destination.label }
+        : null,
+    );
+  }
+
   return (
     <div className="relative h-full w-full overflow-hidden">
       {/* Leaflet map — full bleed */}
@@ -292,10 +520,10 @@ export function MapaVivo({ onSelectRide }: MapaVivoProps) {
           maxZoom={20}
         />
 
-        {/* Re-center animation when recenter is triggered */}
+        {/* Re-center animation when triggered */}
         <MapRecenter
           key={recenterTrigger}
-          position={recenterTrigger > 0 ? (userPosition ?? mapCenter) : mapCenter}
+          position={recenterTrigger > 0 ? mapCenter : mapCenter}
         />
 
         {/* User location marker */}
@@ -304,6 +532,16 @@ export function MapaVivo({ onSelectRide }: MapaVivoProps) {
             position={userPosition}
             icon={userIcon}
             alt="Sua localização atual"
+          />
+        )}
+
+        {/* Destination marker — plotted once user selects an address */}
+        {destination && (
+          <Marker
+            position={[destination.lat, destination.lng]}
+            icon={destIcon}
+            alt={`Destino: ${destination.shortLabel}`}
+            title={destination.label}
           />
         )}
 
@@ -331,8 +569,12 @@ export function MapaVivo({ onSelectRide }: MapaVivoProps) {
       {/* Map FABs */}
       <MapFABs onRecenter={handleRecenter} />
 
-      {/* Bottom action panel */}
-      <BottomPanel onSelectRide={onSelectRide} />
+      {/* Bottom action panel with autocomplete */}
+      <BottomPanel
+        onSelectRide={handleSelectRide}
+        onDestinationChange={handleDestinationChange}
+        destination={destination}
+      />
     </div>
   );
 }
