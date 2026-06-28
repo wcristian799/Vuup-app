@@ -1,0 +1,126 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* VUUP brand tokens */
+  --color-neon: var(--neon);
+  --color-neon-glow: var(--neon-glow);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-electric: var(--electric);
+  --color-electric-deep: var(--electric-deep);
+  --color-danger: var(--danger);
+  --color-danger-glow: var(--danger-glow);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-ice: var(--ice);
+
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  --radius: 1rem;
+
+  /* Deep urban black canvas */
+  --background: oklch(0.13 0.015 260);
+  --foreground: oklch(0.98 0.005 240);
+
+  --surface: oklch(0.17 0.018 260);
+  --surface-2: oklch(0.21 0.022 262);
+  --surface-3: oklch(0.26 0.026 262);
+
+  --card: oklch(0.18 0.02 260);
+  --card-foreground: oklch(0.98 0.005 240);
+  --popover: oklch(0.18 0.02 260);
+  --popover-foreground: oklch(0.98 0.005 240);
+
+  /* VUUP electric blue — signature */
+  --primary: oklch(0.68 0.21 248);
+  --primary-foreground: oklch(0.12 0.02 260);
+  --electric: oklch(0.72 0.22 246);
+  --electric-deep: oklch(0.46 0.24 262);
+
+  /* Neon green for earnings / economy */
+  --neon: oklch(0.86 0.24 148);
+  --neon-glow: oklch(0.92 0.22 152);
+
+  /* Gold for founder / passive income */
+  --gold: oklch(0.84 0.16 88);
+  --gold-soft: oklch(0.92 0.1 88);
+
+  /* Ice / cold blue accent */
+  --ice: oklch(0.88 0.08 220);
+
+  /* Alert / danger */
+  --danger: oklch(0.65 0.24 22);
+  --danger-glow: oklch(0.78 0.2 24);
+
+  --secondary: oklch(0.21 0.022 262);
+  --secondary-foreground: oklch(0.88 0.01 240);
+
+  --muted: oklch(0.21 0.018 260);
+  --muted-foreground: oklch(0.62 0.02 250);
+
+  --accent: oklch(0.24 0.03 262);
+  --accent-foreground: oklch(0.9 0.01 240);
+
+  --destructive: oklch(0.62 0.22 22);
+  --destructive-foreground: oklch(0.98 0.005 240);
+
+  --border: oklch(0.28 0.025 262);
+  --input: oklch(0.21 0.022 262);
+  --ring: oklch(0.68 0.21 248);
+
+  /* Canvas gradient */
+  --gradient-canvas: linear-gradient(
+    160deg,
+    oklch(0.13 0.02 268) 0%,
+    oklch(0.11 0.015 255) 50%,
+    oklch(0.14 0.025 275) 100%
+  );
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
