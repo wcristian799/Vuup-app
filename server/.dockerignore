@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+data
+*.db
+.env
+.env.*
+*.log
+vitest.config.ts
+src/test
+README.md

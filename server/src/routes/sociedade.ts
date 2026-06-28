@@ -22,7 +22,6 @@ import {
   findWalletByUserId,
   findSociedadeByUserId,
   createTransaction,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 } from "../models/mock-data.js";
 
 export const sociedadeRouter = new Hono();
@@ -140,7 +139,10 @@ sociedadeRouter.post("/upgrade", zValidator("json", SociedadeUpgradeRequestSchem
     const stepCost = SOCIEDADE_UPGRADE_COST_CENTS[stepKey];
     if (stepCost === undefined) {
       return c.json(
-        { code: "INVALID_UPGRADE", message: `Upgrade de ${NIVEL_ORDER[i]} para ${NIVEL_ORDER[i + 1]} não está disponível` },
+        {
+          code: "INVALID_UPGRADE",
+          message: `Upgrade de ${NIVEL_ORDER[i]} para ${NIVEL_ORDER[i + 1]} não está disponível`,
+        },
         422,
       );
     }

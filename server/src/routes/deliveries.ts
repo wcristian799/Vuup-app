@@ -90,9 +90,7 @@ deliveriesRouter.get("/", (c) => {
   const userRole = c.get("userRole");
 
   const deliveries =
-    userRole === "motoboy"
-      ? listDeliveriesByMotoboy(userId)
-      : listDeliveriesByClient(userId);
+    userRole === "motoboy" ? listDeliveriesByMotoboy(userId) : listDeliveriesByClient(userId);
 
   return c.json({
     data: deliveries,

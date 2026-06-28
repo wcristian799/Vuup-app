@@ -8,13 +8,7 @@ import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type DeliveryStatus =
-  | "pending"
-  | "accepted"
-  | "picked_up"
-  | "in_transit"
-  | "delivered"
-  | "failed";
+type DeliveryStatus = "pending" | "accepted" | "picked_up" | "in_transit" | "delivered" | "failed";
 
 interface MockDelivery {
   id: string;
@@ -140,8 +134,7 @@ function DeliveryCard({ delivery, onPress }: DeliveryCardProps) {
       className={cn(
         "min-h-[80px] rounded-2xl border border-border bg-surface-2 px-4 py-3",
         "flex flex-col gap-2",
-        onPress &&
-          "cursor-pointer hover:border-electric/40 hover:bg-surface-3 transition-colors",
+        onPress && "cursor-pointer hover:border-electric/40 hover:bg-surface-3 transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       )}
     >
@@ -196,8 +189,7 @@ function FazerPedidoTab() {
   const [packageDesc, setPackageDesc] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const bothAddressesFilled =
-    pickupAddress.trim().length > 0 && dropoffAddress.trim().length > 0;
+  const bothAddressesFilled = pickupAddress.trim().length > 0 && dropoffAddress.trim().length > 0;
 
   // Mock estimate: R$6.00 base + R$2.00 × 6km = R$18.00 when both filled
   const fareEstimateCents = bothAddressesFilled ? 1800 : 0;
@@ -391,9 +383,7 @@ export function EntregasScreen() {
       {/* Screen header */}
       <div className="px-5 pt-4 pb-3 shrink-0">
         <h1 className="font-display font-bold text-lg text-foreground">Entregas &amp; Comércio</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Envie pacotes com motoboys parceiros
-        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">Envie pacotes com motoboys parceiros</p>
       </div>
 
       {/* Tabs */}
@@ -408,17 +398,11 @@ export function EntregasScreen() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent
-            value="fazer-pedido"
-            className="flex-1 overflow-y-auto scrollbar-none"
-          >
+          <TabsContent value="fazer-pedido" className="flex-1 overflow-y-auto scrollbar-none">
             <FazerPedidoTab />
           </TabsContent>
 
-          <TabsContent
-            value="meus-pedidos"
-            className="flex-1 overflow-y-auto scrollbar-none"
-          >
+          <TabsContent value="meus-pedidos" className="flex-1 overflow-y-auto scrollbar-none">
             <MeusPedidosTab />
           </TabsContent>
         </Tabs>

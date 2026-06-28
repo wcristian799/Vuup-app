@@ -40,6 +40,26 @@ import { deliveryRouter } from "./routes/delivery.js";
 
 const app = new Hono();
 
+// ─── Allowed CORS origins ─────────────────────────────────────────────────────
+// Always allow local dev/preview. Additional production origins come from the
+// CORS_ORIGINS env var (comma-separated, e.g. "https://vuup.app,https://www.vuup.app").
+// Never hard-code the live frontend domain here — set it via Coolify env.
+const DEFAULT_ORIGINS = [
+  "http://localhost:5173", // Vite dev server
+  "http://localhost:4173", // Vite preview
+  "https://vuup.app", // legacy default; override via CORS_ORIGINS in prod
+];
+
+const ALLOWED_ORIGINS = Array.from(
+  new Set([
+    ...DEFAULT_ORIGINS,
+    ...(process.env["CORS_ORIGINS"] ?? "")
+      .split(",")
+      .map((o) => o.trim())
+      .filter(Boolean),
+  ]),
+);
+
 // ─── Global middleware ────────────────────────────────────────────────────────
 
 app.use("*", logger());
@@ -47,11 +67,7 @@ app.use("*", prettyJSON());
 app.use(
   "*",
   cors({
-    origin: [
-      "http://localhost:5173", // Vite dev server
-      "http://localhost:4173", // Vite preview
-      "https://vuup.app", // production
-    ],
+    origin: ALLOWED_ORIGINS,
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,

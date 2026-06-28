@@ -67,10 +67,7 @@ campaignsRouter.get("/", (c) => {
   const userRole = c.get("userRole");
   const status = c.req.query("status");
 
-  const campaigns =
-    userRole === "admin"
-      ? listAllCampaigns(status)
-      : listCampaignsByClient(userId);
+  const campaigns = userRole === "admin" ? listAllCampaigns(status) : listCampaignsByClient(userId);
 
   return c.json({ data: campaigns });
 });
@@ -167,30 +164,26 @@ campaignsRouter.get("/:id/coupons", (c) => {
 export const couponsRouter = new Hono();
 couponsRouter.use("/*", requireAuth);
 
-couponsRouter.post(
-  "/validate",
-  zValidator("json", z.object({ code: z.string() })),
-  (c) => {
-    const { code } = c.req.valid("json");
-    const coupon = findCouponByCode(code);
-    if (!coupon) {
-      return c.json({ valid: false, reason: "Coupon not found" });
-    }
-    const now = new Date().toISOString();
-    if (!coupon.isActive) return c.json({ valid: false, reason: "Coupon inactive" });
-    if (now < coupon.validFrom || now > coupon.validUntil)
-      return c.json({ valid: false, reason: "Coupon expired or not yet valid" });
-    if (coupon.maxUsages !== null && coupon.usagesCount >= coupon.maxUsages)
-      return c.json({ valid: false, reason: "Coupon usage limit reached" });
+couponsRouter.post("/validate", zValidator("json", z.object({ code: z.string() })), (c) => {
+  const { code } = c.req.valid("json");
+  const coupon = findCouponByCode(code);
+  if (!coupon) {
+    return c.json({ valid: false, reason: "Coupon not found" });
+  }
+  const now = new Date().toISOString();
+  if (!coupon.isActive) return c.json({ valid: false, reason: "Coupon inactive" });
+  if (now < coupon.validFrom || now > coupon.validUntil)
+    return c.json({ valid: false, reason: "Coupon expired or not yet valid" });
+  if (coupon.maxUsages !== null && coupon.usagesCount >= coupon.maxUsages)
+    return c.json({ valid: false, reason: "Coupon usage limit reached" });
 
-    return c.json({
-      valid: true,
-      coupon: {
-        code: coupon.code,
-        discountType: coupon.discountType,
-        discountValue: coupon.discountValue,
-        minFareCents: coupon.minFareCents,
-      },
-    });
-  },
-);
+  return c.json({
+    valid: true,
+    coupon: {
+      code: coupon.code,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue,
+      minFareCents: coupon.minFareCents,
+    },
+  });
+});

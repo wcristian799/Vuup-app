@@ -50,18 +50,23 @@ async function getToken(phone: string, role: UserRole = "driver"): Promise<strin
   // Ensure SQLite also has this user with the right role so auth returns the correct JWT claim
   const now = new Date().toISOString();
   const email = `${phone.replace(/\D/g, "")}@stress.vuup.test`;
-  db.prepare(`
+  db.prepare(
+    `
     INSERT OR IGNORE INTO users
       (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, 'active', null, 0, ?, ?)
-  `).run(
+  `,
+  ).run(
     MOCK_USERS.find((u) => u.phone === phone)!.id,
     `Test ${role} ${phone}`,
-    email, phone, role, now, now,
+    email,
+    phone,
+    role,
+    now,
+    now,
   );
   // Force-update role in case it was already inserted with a different role
-  db.prepare("UPDATE users SET role = ?, updated_at = ? WHERE phone = ?")
-    .run(role, now, phone);
+  db.prepare("UPDATE users SET role = ?, updated_at = ? WHERE phone = ?").run(role, now, phone);
 
   const res = await app.request("/auth/login", {
     method: "POST",
@@ -73,7 +78,9 @@ async function getToken(phone: string, role: UserRole = "driver"): Promise<strin
   return body.accessToken as string;
 }
 
-async function createRide(passengerToken: string): Promise<{ rideId: string; fareEstimateCents: number }> {
+async function createRide(
+  passengerToken: string,
+): Promise<{ rideId: string; fareEstimateCents: number }> {
   const res = await app.request("/rides", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${passengerToken}` },
@@ -321,7 +328,7 @@ describe("Panic QoS — swarm stream baseline (VUU-33 regression guard)", () => 
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
         type: "panic",
-        location: { lat: -23.5510, lng: -46.6340 },
+        location: { lat: -23.551, lng: -46.634 },
         description: "Stress test panic",
       }),
     });

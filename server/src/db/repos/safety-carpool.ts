@@ -39,8 +39,7 @@ export function listSafetyEvents(includeResolved = false, limit = 50): SafetyEve
 
 export function findSafetyEventById(id: string): SafetyEvent | undefined {
   const row = db.prepare("SELECT * FROM safety_events WHERE id = ?").get(id) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return row ? toSafetyEvent(row) : undefined;
 }
 
@@ -55,13 +54,15 @@ export interface CreateSafetyEventInput {
 export function createSafetyEvent(input: CreateSafetyEventInput): SafetyEvent {
   const id = randomUUID();
   const now = new Date().toISOString();
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO safety_events (
       id, reporter_id, ride_id, type,
       location_lat, location_lng, description,
       is_resolved, upvotes, created_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
-  `).run(
+  `,
+  ).run(
     id,
     input.reporterId,
     input.rideId ?? null,
@@ -81,9 +82,7 @@ export function upvoteSafetyEvent(id: string): SafetyEvent | undefined {
 
 export function resolveSafetyEvent(id: string): SafetyEvent | undefined {
   const now = new Date().toISOString();
-  db.prepare(
-    "UPDATE safety_events SET is_resolved = 1, resolved_at = ? WHERE id = ?",
-  ).run(now, id);
+  db.prepare("UPDATE safety_events SET is_resolved = 1, resolved_at = ? WHERE id = ?").run(now, id);
   return findSafetyEventById(id);
 }
 
@@ -122,8 +121,7 @@ export function listCarpoolRoutes(activeOnly = true, limit = 50): CarpoolRoute[]
 
 export function findCarpoolRouteById(id: string): CarpoolRoute | undefined {
   const row = db.prepare("SELECT * FROM carpool_routes WHERE id = ?").get(id) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return row ? toCarpoolRoute(row) : undefined;
 }
 
@@ -141,7 +139,8 @@ export interface CreateCarpoolRouteInput {
 export function createCarpoolRoute(input: CreateCarpoolRouteInput): CarpoolRoute {
   const id = randomUUID();
   const now = new Date().toISOString();
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO carpool_routes (
       id, driver_id, name, route_type, stops_json,
       max_passengers, current_passengers, fare_per_seat,
@@ -151,7 +150,8 @@ export function createCarpoolRoute(input: CreateCarpoolRouteInput): CarpoolRoute
       @max_passengers, 0, @fare_per_seat,
       @departure_time, @scheduled_at, 1, @created_at
     )
-  `).run({
+  `,
+  ).run({
     id,
     driver_id: input.driverId,
     name: input.name,

@@ -1,14 +1,7 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import {
-  ShoppingCart,
-  Beef,
-  Milk,
-  Carrot,
-  TrendingUp,
-  Zap,
-} from "lucide-react";
+import { ShoppingCart, Beef, Milk, Carrot, TrendingUp, Zap } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -41,10 +34,34 @@ const MOCK_PATRONO = {
 };
 
 const MOCK_MODE_CARDS = [
-  { mode: "hourly" as const, projectedEarning: 4500, actualEarning: 3200, tripCount: 3, isActive: true },
-  { mode: "daily" as const, projectedEarning: 30000, actualEarning: 18750, tripCount: 12, isActive: false },
-  { mode: "weekly" as const, projectedEarning: 150000, actualEarning: 112400, tripCount: 68, isActive: false },
-  { mode: "monthly" as const, projectedEarning: 500000, actualEarning: 431200, tripCount: 241, isActive: false },
+  {
+    mode: "hourly" as const,
+    projectedEarning: 4500,
+    actualEarning: 3200,
+    tripCount: 3,
+    isActive: true,
+  },
+  {
+    mode: "daily" as const,
+    projectedEarning: 30000,
+    actualEarning: 18750,
+    tripCount: 12,
+    isActive: false,
+  },
+  {
+    mode: "weekly" as const,
+    projectedEarning: 150000,
+    actualEarning: 112400,
+    tripCount: 68,
+    isActive: false,
+  },
+  {
+    mode: "monthly" as const,
+    projectedEarning: 500000,
+    actualEarning: 431200,
+    tripCount: 241,
+    isActive: false,
+  },
 ];
 
 const MOCK_TRIPS = [
@@ -86,9 +103,9 @@ const MOCK_SUPERMARKET_CARDS: SupermarketCard[] = [
 ];
 
 const STATUS_PILL_CLASS: Record<SupermarketCard["status"], string> = {
-  "disponível": "bg-neon/20 text-neon border border-neon/30",
+  disponível: "bg-neon/20 text-neon border border-neon/30",
   "em andamento": "bg-electric/20 text-electric border border-electric/30",
-  "concluído": "bg-surface-3 text-muted-foreground border border-border",
+  concluído: "bg-surface-3 text-muted-foreground border border-border",
 };
 
 function formatBRL(cents: number): string {
@@ -161,7 +178,6 @@ export function DriverDashboard({ isPatrono = false, tier = "ouro" }: DriverDash
       </AnimatePresence>
 
       <div className="flex flex-col gap-5 px-4 pt-4 pb-8">
-
         {/* ── Header ── */}
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -171,9 +187,7 @@ export function DriverDashboard({ isPatrono = false, tier = "ouro" }: DriverDash
               aria-label="Avatar do motorista"
             >
               <AvatarImage src="" alt="Foto do motorista" />
-              <AvatarFallback variant={isPatrono ? "patron" : "driver"}>
-                MJ
-              </AvatarFallback>
+              <AvatarFallback variant={isPatrono ? "patron" : "driver"}>MJ</AvatarFallback>
             </Avatar>
             <div>
               <p className="font-display font-semibold text-sm text-foreground leading-tight">
@@ -181,7 +195,9 @@ export function DriverDashboard({ isPatrono = false, tier = "ouro" }: DriverDash
               </p>
               {isPatrono && (
                 <div className="flex items-center gap-1 mt-0.5">
-                  <span className="text-gold text-[10px]" aria-hidden="true">✦</span>
+                  <span className="text-gold text-[10px]" aria-hidden="true">
+                    ✦
+                  </span>
                   <span className="font-display text-[10px] font-semibold text-gold tracking-widest uppercase">
                     Patrono {tier.charAt(0).toUpperCase() + tier.slice(1)}
                   </span>
@@ -223,7 +239,9 @@ export function DriverDashboard({ isPatrono = false, tier = "ouro" }: DriverDash
           <EarningsCounter value={MOCK_EARNINGS.today} size="hero" colorClass="text-neon" />
           <div className="flex gap-4 mt-2">
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Semana</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
+                Semana
+              </p>
               <EarningsCounter
                 value={MOCK_EARNINGS.week}
                 size="lg"
@@ -232,7 +250,9 @@ export function DriverDashboard({ isPatrono = false, tier = "ouro" }: DriverDash
               />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Mês</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
+                Mês
+              </p>
               <EarningsCounter
                 value={MOCK_EARNINGS.month}
                 size="lg"
@@ -333,7 +353,9 @@ export function DriverDashboard({ isPatrono = false, tier = "ouro" }: DriverDash
                   >
                     Modo Supermarket
                   </p>
-                  <p className="text-xs text-muted-foreground">Entregas em supermercados parceiros</p>
+                  <p className="text-xs text-muted-foreground">
+                    Entregas em supermercados parceiros
+                  </p>
                 </div>
               </div>
               <Switch
@@ -355,7 +377,11 @@ export function DriverDashboard({ isPatrono = false, tier = "ouro" }: DriverDash
                   transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
                   className="overflow-hidden"
                 >
-                  <div className="flex flex-col gap-2 mt-3" role="list" aria-label="Categorias supermarket">
+                  <div
+                    className="flex flex-col gap-2 mt-3"
+                    role="list"
+                    aria-label="Categorias supermarket"
+                  >
                     {MOCK_SUPERMARKET_CARDS.map((card) => {
                       const Icon = card.icon;
                       return (
@@ -407,7 +433,11 @@ export function DriverDashboard({ isPatrono = false, tier = "ouro" }: DriverDash
             {[
               { label: "Avaliação", value: "4.97", icon: "⭐" },
               { label: "Corridas hoje", value: "12", icon: "🚗" },
-              { label: "Aceite", value: "98%", icon: <Zap size={12} className="text-electric" aria-hidden="true" /> },
+              {
+                label: "Aceite",
+                value: "98%",
+                icon: <Zap size={12} className="text-electric" aria-hidden="true" />,
+              },
             ].map(({ label, value, icon }) => (
               <div
                 key={label}
@@ -422,7 +452,6 @@ export function DriverDashboard({ isPatrono = false, tier = "ouro" }: DriverDash
             ))}
           </div>
         </section>
-
       </div>
     </div>
   );

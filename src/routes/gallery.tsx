@@ -515,8 +515,8 @@ function GalleryPage() {
         <Section title="DisputeCounterOfferPanel">
           <div className="px-4">
             <p className="text-xs text-muted-foreground mb-3">
-              Bottom-sheet de contra-oferta em tempo real (disputa de corrida).
-              ARIA completo: role=dialog, aria-modal, focus trap, Escape to close.
+              Bottom-sheet de contra-oferta em tempo real (disputa de corrida). ARIA completo:
+              role=dialog, aria-modal, focus trap, Escape to close.
             </p>
             <Button
               variant="electric"
@@ -535,7 +535,10 @@ function GalleryPage() {
             <p className="text-xs text-muted-foreground mb-3">
               Dashboard do motorista/fundador — visível na aba "Perfil" do app principal.
             </p>
-            <div className="rounded-2xl border border-border bg-surface-2 overflow-hidden" style={{ maxHeight: 480 }}>
+            <div
+              className="rounded-2xl border border-border bg-surface-2 overflow-hidden"
+              style={{ maxHeight: 480 }}
+            >
               <div className="overflow-y-auto h-[480px]">
                 <DriverDashboard isPatrono={true} tier="ouro" />
               </div>
@@ -549,7 +552,10 @@ function GalleryPage() {
             <p className="text-xs text-muted-foreground mb-3">
               Tela de entregas — aba "Entregas" do app. Dois sub-tabs: pedido novo e lista.
             </p>
-            <div className="rounded-2xl border border-border bg-surface-2 overflow-hidden" style={{ maxHeight: 520 }}>
+            <div
+              className="rounded-2xl border border-border bg-surface-2 overflow-hidden"
+              style={{ maxHeight: 520 }}
+            >
               <div className="overflow-y-auto h-[520px]">
                 <EntregasScreen />
               </div>
@@ -589,7 +595,6 @@ function GalleryPage() {
         driversInDispute={3}
         windowRemainingMs={12000}
         onSubmitOffer={(amount) => {
-          // eslint-disable-next-line no-console
           console.log("Offer submitted:", amount);
           setDisputeOpen(false);
         }}

@@ -12,7 +12,19 @@ import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { createSecretKey } from "node:crypto";
 
 // NEVER commit real secrets — this default is for local dev mock only.
-const RAW_SECRET = process.env["AUTH_SECRET"] ?? "vuup-dev-secret-change-in-production-min32chars!";
+const DEV_SECRET = "vuup-dev-secret-change-in-production-min32chars!";
+const RAW_SECRET = process.env["AUTH_SECRET"] ?? DEV_SECRET;
+
+// Fail fast in production if the secret is missing or still the dev default.
+// This prevents shipping a build that signs tokens with a publicly known key.
+if (
+  process.env["NODE_ENV"] === "production" &&
+  (RAW_SECRET === DEV_SECRET || RAW_SECRET.length < 32)
+) {
+  throw new Error(
+    "AUTH_SECRET must be set to a random 32+ char value in production (cannot use the dev default).",
+  );
+}
 
 function getSecretKey() {
   // Use Node.js createSecretKey which produces a proper KeyObject, avoiding

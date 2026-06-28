@@ -200,8 +200,8 @@ export const TransactionTypeSchema = z.enum([
   "coupon_credit",
   "campaign_bonus",
   "campaign_discount", // daily R$50 campaign discount
-  "transfer_in",       // received transfer from another wallet
-  "transfer_out",      // sent transfer to another wallet
+  "transfer_in", // received transfer from another wallet
+  "transfer_out", // sent transfer to another wallet
   "withdrawal",
   "deposit",
   "refund",
@@ -448,8 +448,8 @@ export const RideRequestV2Schema = RideRequestSchema.extend({
 // ─── Onda 5: Payment Gateway (stub) ──────────────────────────────────────────
 
 export const PaymentMethodSchema = z.enum([
-  "wallet",    // pay from Carteira Vuup balance
-  "pix",       // Pix (gateway stub)
+  "wallet", // pay from Carteira Vuup balance
+  "pix", // Pix (gateway stub)
   "credit_card", // credit card (gateway stub)
 ]);
 export type PaymentMethod = z.infer<typeof PaymentMethodSchema>;
@@ -546,11 +546,11 @@ export const ActivateCampaignDiscountRequestSchema = z.object({
 // ─── Onda 5: Upgrade de Sociedade ────────────────────────────────────────────
 
 export const SociedadeNivelSchema = z.enum([
-  "starter",     // base level — no passive income share
-  "bronze",      // 1% passive income share
-  "silver",      // 3% passive income share
-  "gold",        // 7% passive income share
-  "platinum",    // 15% passive income share (founder level)
+  "starter", // base level — no passive income share
+  "bronze", // 1% passive income share
+  "silver", // 3% passive income share
+  "gold", // 7% passive income share
+  "platinum", // 15% passive income share (founder level)
 ]);
 export type SociedadeNivel = z.infer<typeof SociedadeNivelSchema>;
 
@@ -565,10 +565,10 @@ export const SOCIEDADE_PASSIVE_INCOME_PERCENT: Record<SociedadeNivel, number> = 
 
 /** Upgrade cost in BRL cents per nivel transition */
 export const SOCIEDADE_UPGRADE_COST_CENTS: Partial<Record<string, number>> = {
-  "starter->bronze": 50000,   // R$500
-  "bronze->silver": 150000,   // R$1.500
-  "silver->gold": 500000,     // R$5.000
-  "gold->platinum": 2000000,  // R$20.000
+  "starter->bronze": 50000, // R$500
+  "bronze->silver": 150000, // R$1.500
+  "silver->gold": 500000, // R$5.000
+  "gold->platinum": 2000000, // R$20.000
 };
 
 export const SociedadeParticipacaoSchema = z.object({

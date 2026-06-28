@@ -153,7 +153,11 @@ export const apiClient = {
         recentTransactions?: Transaction[];
         snapshotAt: string;
       }>("/wallet/passive-income"),
-    payRide: (data: { rideId: string; method: "wallet" | "pix" | "credit_card"; amountCents: number }) =>
+    payRide: (data: {
+      rideId: string;
+      method: "wallet" | "pix" | "credit_card";
+      amountCents: number;
+    }) =>
       request<{ payment: PaymentGatewayTransaction; message: string }>("/wallet/pay-ride", {
         method: "POST",
         body: JSON.stringify(data),
@@ -173,7 +177,10 @@ export const apiClient = {
           isDirectUpgrade: boolean;
         }>;
       }>("/sociedade/upgrade-options"),
-    upgrade: (data: { targetNivel: SociedadeNivel; paymentMethod?: "wallet" | "pix" | "credit_card" }) =>
+    upgrade: (data: {
+      targetNivel: SociedadeNivel;
+      paymentMethod?: "wallet" | "pix" | "credit_card";
+    }) =>
       request<{
         participacao: SociedadeParticipacao;
         costCents: number;

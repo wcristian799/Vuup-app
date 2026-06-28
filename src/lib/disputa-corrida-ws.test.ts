@@ -188,7 +188,12 @@ describe("DisputeWsClient — listener management", () => {
 
     // Simulate SSE event on ride stream
     const [rideSource] = MockEventSource.instances;
-    rideSource!.emit("bid_received", { driverId: "d1", distanceToOriginKm: 0.5, offeredFareCents: 900, totalBids: 1 });
+    rideSource!.emit("bid_received", {
+      driverId: "d1",
+      distanceToOriginKm: 0.5,
+      offeredFareCents: 900,
+      totalBids: 1,
+    });
 
     // Flush microtasks
     await new Promise((r) => setTimeout(r, 0));
@@ -230,7 +235,11 @@ describe("DisputeWsClient — listener management", () => {
     client.off("disputa_opened", h1);
 
     const [rideSource] = MockEventSource.instances;
-    rideSource!.emit("disputa_opened", { rideId: "ride-3", windowExpiresAt: "2099-01-01T00:00:00Z", fareEstimateCents: 1200 });
+    rideSource!.emit("disputa_opened", {
+      rideId: "ride-3",
+      windowExpiresAt: "2099-01-01T00:00:00Z",
+      fareEstimateCents: 1200,
+    });
     await new Promise((r) => setTimeout(r, 0));
 
     expect(h1).not.toHaveBeenCalled();
@@ -300,8 +309,19 @@ describe("DisputeWsClient — QoS (panic > dispute events)", () => {
     const swarmSource = MockEventSource.instances[1]!;
 
     // Emit normal first, then high
-    rideSource.emit("bid_received", { driverId: "d1", distanceToOriginKm: 0.5, offeredFareCents: 900, totalBids: 1 });
-    swarmSource.emit("swarm_activated", { id: "sw1", lat: -23.55, lng: -46.63, confirmCount: 3, description: "Panic" });
+    rideSource.emit("bid_received", {
+      driverId: "d1",
+      distanceToOriginKm: 0.5,
+      offeredFareCents: 900,
+      totalBids: 1,
+    });
+    swarmSource.emit("swarm_activated", {
+      id: "sw1",
+      lat: -23.55,
+      lng: -46.63,
+      confirmCount: 3,
+      description: "Panic",
+    });
 
     // Swarm handler should be called synchronously, bid handler via microtask
     expect(callOrder).toEqual(["swarm"]);

@@ -7,8 +7,11 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // base: './' is required for Capacitor's file:// protocol on Android/iOS
-  base: "./",
+  // base: './' is required for Capacitor's file:// protocol on Android/iOS (the
+  // default, preserving the tested mobile build). Web hosts (Vercel) serve from
+  // the domain root, where relative paths break nested routes — the Vercel build
+  // sets VITE_BASE=/ to override. See DEPLOY.md.
+  base: process.env["VITE_BASE"] ?? "./",
   plugins: [
     // TanStack Router file-based routing (must come before react)
     TanStackRouterVite({ autoCodeSplitting: true }),

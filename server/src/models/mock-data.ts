@@ -474,4 +474,3 @@ export function settleRidePayment(
 
   return { passengerTx, driverTx, platformFeeCents };
 }
-

@@ -94,14 +94,20 @@ function VuupPassengerApp() {
           )}
           {activeTab === "entregas" && (
             <ScreenTransition motionKey="entregas">
-              <div className="absolute inset-0 pt-8 pb-20 overflow-hidden" aria-label="Entregas e Comércio">
+              <div
+                className="absolute inset-0 pt-8 pb-20 overflow-hidden"
+                aria-label="Entregas e Comércio"
+              >
                 <EntregasScreen />
               </div>
             </ScreenTransition>
           )}
           {activeTab === "profile" && (
             <ScreenTransition motionKey="profile">
-              <div className="absolute inset-0 pt-8 pb-20 overflow-hidden" aria-label="Perfil do motorista">
+              <div
+                className="absolute inset-0 pt-8 pb-20 overflow-hidden"
+                aria-label="Perfil do motorista"
+              >
                 <DriverDashboard isPatrono={true} tier="ouro" />
               </div>
             </ScreenTransition>
