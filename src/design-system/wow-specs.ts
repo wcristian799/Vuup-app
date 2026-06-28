@@ -9,7 +9,6 @@
  * during VUU-3/VUU-4/VUU-5 implementation.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { color, duration, easing, shadow, tapTarget } from "./tokens";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -74,13 +73,13 @@ import { color, duration, easing, shadow, tapTarget } from "./tokens";
  *         focus ring: 2px solid ring, offset 2px
  */
 export const MapaVivoSpec = {
-  markerSize:          40,
-  markerActivePulse:   { duration: 2000, repeatType: "loop" as const },
-  panelEntryDuration:  duration.slow,
-  panelExitDuration:   duration.normal,
-  fabSize:             48,
+  markerSize: 40,
+  markerActivePulse: { duration: 2000, repeatType: "loop" as const },
+  panelEntryDuration: duration.slow,
+  panelExitDuration: duration.normal,
+  fabSize: 48,
   heatmapOverallAlpha: 0.65,
-  heatmapUpdateFade:   500,
+  heatmapUpdateFade: 500,
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -145,11 +144,11 @@ export const MapaVivoSpec = {
  *               <title> and <desc> elements inside SVG
  */
 export const MatrixSliderSpec = {
-  cardPeekWidth:       24,   // px each side
-  cardMinHeight:       180,  // px
-  cardStaggerMs:       80,
-  numberRainOpacity:   0.15,
-  numberRainSpeedMs:   { min: 800, max: 1600 },
+  cardPeekWidth: 24, // px each side
+  cardMinHeight: 180, // px
+  cardStaggerMs: 80,
+  numberRainOpacity: 0.15,
+  numberRainSpeedMs: { min: 800, max: 1600 },
   respectReducedMotion: true,
 } as const;
 
@@ -217,19 +216,19 @@ export const MatrixSliderSpec = {
  *         Needs visible focus ring: 3px solid dangerGlow, offset 3px
  */
 export const ShieldEnxameSpec = {
-  shieldStates:        ["safe", "warning", "danger", "off"] as const,
-  safeAnimDuration:    3000,
+  shieldStates: ["safe", "warning", "danger", "off"] as const,
+  safeAnimDuration: 3000,
   warningAnimDuration: 1500,
-  dangerStrobeDuration:600,
-  enxameDotSize:       10,
-  enxameRadiusMin:     100,
-  enxameRadiusMax:     180,
-  enxameMaxVisible:    12,
-  panicButtonSize:     64,
-  panicHoldMs:         500,
+  dangerStrobeDuration: 600,
+  enxameDotSize: 10,
+  enxameRadiusMin: 100,
+  enxameRadiusMax: 180,
+  enxameMaxVisible: 12,
+  panicButtonSize: 64,
+  panicHoldMs: 500,
 } as const;
 
-export type ShieldState = typeof ShieldEnxameSpec.shieldStates[number];
+export type ShieldState = (typeof ShieldEnxameSpec.shieldStates)[number];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. SUPERMARKET MODE  (Cockpit tab — passive income / subscription layer)
@@ -284,12 +283,12 @@ export type ShieldState = typeof ShieldEnxameSpec.shieldStates[number];
  * - Keyboard: Space to toggle (Radix handles this natively)
  */
 export const SupermarketModeSpec = {
-  rippleDuration:   400,
-  tokenSwapDuration:300,
-  cardRevealDuration:350,
-  cardStaggerMs:    60,
-  totalTransitionMs:900,
-  cssClass:         "supermarket-mode",
+  rippleDuration: 400,
+  tokenSwapDuration: 300,
+  cardRevealDuration: 350,
+  cardStaggerMs: 60,
+  totalTransitionMs: 900,
+  cssClass: "supermarket-mode",
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -376,11 +375,11 @@ export const SupermarketModeSpec = {
 export const PatronoCardSpec = {
   containerBorderTopWidth: "2px",
   sparkleRotationDuration: 4000,
-  progressRevealDuration:  duration.dramatic,
-  unlockParticleCount:     20,
-  unlockAutoDismissMs:     3000,
-  focusRingColor:          "gold",
-  focusRingWidth:          "2px",
+  progressRevealDuration: duration.dramatic,
+  unlockParticleCount: 20,
+  unlockAutoDismissMs: 3000,
+  focusRingColor: "gold",
+  focusRingWidth: "2px",
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
