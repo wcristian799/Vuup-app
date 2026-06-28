@@ -7,6 +7,8 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // base: './' is required for Capacitor's file:// protocol on Android/iOS
+  base: "./",
   plugins: [
     // TanStack Router file-based routing (must come before react)
     TanStackRouterVite({ autoCodeSplitting: true }),

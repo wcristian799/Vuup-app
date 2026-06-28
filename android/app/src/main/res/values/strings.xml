@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VUUP</string>
+    <string name="title_activity_main">VUUP</string>
+    <string name="package_name">com.vuup.app</string>
+    <string name="custom_url_scheme">com.vuup.app</string>
+</resources>
