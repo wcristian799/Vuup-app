@@ -36,7 +36,6 @@ import {
   rideEventBus,
   updateDriverLocation,
   getNearbyDrivers,
-  openDisputaSession,
   submitBid,
   resolveDisputa,
   createSwarmEvent,
@@ -197,7 +196,7 @@ matchingRouter.get("/me/stream", (c) => {
 
 // ─── SSE: swarm broadcast stream ─────────────────────────────────────────────
 
-matchingRouter.get("/swarm/stream", (c) => {
+matchingRouter.get("/swarm/stream", () => {
   return sseResponse((send) => {
     const handler = (payload: { type: string; data: unknown }) => {
       send(payload.type, payload.data);

@@ -33,7 +33,7 @@
  *    - Ana's patron driver (Carlos) sees VIP window state on ride GET
  */
 
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import app from "../index.js";
 import db from "../db/database.js";
 import { MOCK_USERS, MOCK_WALLETS, MOCK_RIDES } from "../models/mock-data.js";
@@ -53,38 +53,84 @@ import { MOCK_USERS, MOCK_WALLETS, MOCK_RIDES } from "../models/mock-data.js";
       (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
   `);
-  insUser.run("00000000-0000-0000-0000-000000000001", "Ana Costa",       "ana@vuup.app",     "+5511999990001", "passenger", 4.8, 42,  YESTERDAY, NOW);
-  insUser.run("00000000-0000-0000-0000-000000000002", "Carlos Moto",     "carlos@vuup.app",  "+5511999990002", "driver",    4.9, 327, YESTERDAY, NOW);
-  insUser.run("00000000-0000-0000-0000-000000000003", "Roberto Fundador","roberto@vuup.app", "+5511999990003", "founder",   4.7, 15,  YESTERDAY, NOW);
-  insUser.run("00000000-0000-0000-0000-000000000099", "Admin",           "admin@vuup.app",   "+5511999990099", "admin",     5.0, 0,   YESTERDAY, NOW);
+  insUser.run(
+    "00000000-0000-0000-0000-000000000001",
+    "Ana Costa",
+    "ana@vuup.app",
+    "+5511999990001",
+    "passenger",
+    4.8,
+    42,
+    YESTERDAY,
+    NOW,
+  );
+  insUser.run(
+    "00000000-0000-0000-0000-000000000002",
+    "Carlos Moto",
+    "carlos@vuup.app",
+    "+5511999990002",
+    "driver",
+    4.9,
+    327,
+    YESTERDAY,
+    NOW,
+  );
+  insUser.run(
+    "00000000-0000-0000-0000-000000000003",
+    "Roberto Fundador",
+    "roberto@vuup.app",
+    "+5511999990003",
+    "founder",
+    4.7,
+    15,
+    YESTERDAY,
+    NOW,
+  );
+  insUser.run(
+    "00000000-0000-0000-0000-000000000099",
+    "Admin",
+    "admin@vuup.app",
+    "+5511999990099",
+    "admin",
+    5.0,
+    0,
+    YESTERDAY,
+    NOW,
+  );
 
   // Coupon for fare estimate test (no campaign FK needed — campaign_id is nullable)
-  db.prepare(`
+  db.prepare(
+    `
     INSERT OR IGNORE INTO coupons
       (id, code, campaign_id, discount_type, discount_value, max_usages, usages_count, min_fare_cents, valid_from, valid_until, is_active)
     VALUES ('coup-e2e-001', 'VUUP10', NULL, 'percent', 10, NULL, 0, 0, ?, ?, 1)
-  `).run(YESTERDAY, NEXT_MONTH);
+  `,
+  ).run(YESTERDAY, NEXT_MONTH);
 
   // Seed a completed ride with the known mock ID so Phase 5 "cannot cancel completed" test works
-  db.prepare(`
+  db.prepare(
+    `
     INSERT OR IGNORE INTO rides
       (id, passenger_id, driver_id, route_type, status, origin_lat, origin_lng, origin_address,
        destination_lat, destination_lng, destination_address, estimated_distance_km,
        estimated_duration_min, fare_estimate, fare_actual, completed_at, created_at, updated_at)
     VALUES (?, ?, ?, 'livre', 'completed', -23.5505, -46.6333, 'Av. Paulista, 1000',
             -23.5489, -46.6388, 'Rua Augusta, 500', 0.8, 5, 1200, 1200, ?, ?, ?)
-  `).run(
+  `,
+  ).run(
     "10000000-0000-0000-0000-000000000001",
     "00000000-0000-0000-0000-000000000001", // Ana
     "00000000-0000-0000-0000-000000000002", // Carlos
-    YESTERDAY, YESTERDAY, NOW,
+    YESTERDAY,
+    YESTERDAY,
+    NOW,
   );
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function json(res: Response): Promise<Record<string, unknown>> {
-  return res.json();
+  return (await res.json()) as Record<string, unknown>;
 }
 
 async function getToken(phone: string): Promise<string> {
@@ -109,8 +155,10 @@ function ensureDriver(phone: string, name: string): string {
   if (existing) {
     (existing as { role: string }).role = "driver";
     // Keep SQLite in sync
-    db.prepare("UPDATE users SET role = 'driver', updated_at = ? WHERE phone = ?")
-      .run(new Date().toISOString(), phone);
+    db.prepare("UPDATE users SET role = 'driver', updated_at = ? WHERE phone = ?").run(
+      new Date().toISOString(),
+      phone,
+    );
     return existing.id;
   }
   const id = crypto.randomUUID();
@@ -130,11 +178,13 @@ function ensureDriver(phone: string, name: string): string {
     updatedAt: now,
   });
   // Also seed SQLite so auth finds this driver with the correct UUID
-  db.prepare(`
+  db.prepare(
+    `
     INSERT OR IGNORE INTO users
       (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
     VALUES (?, ?, ?, ?, 'driver', 'active', 4.8, 0, ?, ?)
-  `).run(id, name, `${phone.replace(/\D/g, "")}@e2e.vuup.app`, phone, now, now);
+  `,
+  ).run(id, name, `${phone.replace(/\D/g, "")}@e2e.vuup.app`, phone, now, now);
   return id;
 }
 
@@ -156,10 +206,12 @@ function ensureWallet(userId: string, balanceCents = 50000) {
     updatedAt: new Date().toISOString(),
   });
 }
+void ensureWallet;
 
-const PASSENGER_PHONE = "+5511999990001";      // Ana — passenger
-const DRIVER_PHONE = "+5511999990002";         // Carlos — driver (also Ana's patron)
-const DRIVER2_PHONE = "+5511999990020";        // Second driver for parallel bid tests
+const PASSENGER_PHONE = "+5511999990001"; // Ana — passenger
+const DRIVER_PHONE = "+5511999990002"; // Carlos — driver (also Ana's patron)
+const DRIVER2_PHONE = "+5511999990020"; // Second driver for parallel bid tests
+void DRIVER2_PHONE;
 
 const ORIGIN = { lat: -23.5505, lng: -46.6333, address: "Av. Paulista, 1000" };
 const DESTINATION = { lat: -23.5489, lng: -46.6388, address: "Rua Augusta, 500" };
@@ -273,10 +325,17 @@ describe("Phase 1 — Fare estimate (Matrix Slider pricing)", () => {
     const withCouponRes = await app.request("/rides/fare-estimate", {
       method: "POST",
       headers: authHeader(passengerToken),
-      body: JSON.stringify({ modality: "livre", origin: ORIGIN, destination: DESTINATION, couponCode: "VUUP10" }),
+      body: JSON.stringify({
+        modality: "livre",
+        origin: ORIGIN,
+        destination: DESTINATION,
+        couponCode: "VUUP10",
+      }),
     });
     const without = (await withoutCouponRes.json()) as { fareBreakdown: { totalCents: number } };
-    const withCoupon = (await withCouponRes.json()) as { fareBreakdown: { totalCents: number; couponDiscountCents: number } };
+    const withCoupon = (await withCouponRes.json()) as {
+      fareBreakdown: { totalCents: number; couponDiscountCents: number };
+    };
     expect(withCoupon.fareBreakdown.totalCents).toBeLessThan(without.fareBreakdown.totalCents);
     expect(withCoupon.fareBreakdown.couponDiscountCents).toBeGreaterThan(0);
   });
@@ -393,13 +452,17 @@ describe("Phase 3 — Disputa de corrida (matching)", () => {
       body: JSON.stringify({ routeType: "livre", origin: ORIGIN, destination: DESTINATION }),
     });
     expect(rideRes.status).toBe(201);
-    const { ride } = await json(rideRes) as { ride: { id: string; fareEstimate: number } };
+    const { ride } = (await json(rideRes)) as { ride: { id: string; fareEstimate: number } };
 
     // A bid attempt proves the session route exists (lat+lng required by schema)
     const bidRes = await app.request(`/matching/rides/${ride.id}/disputa/bid`, {
       method: "POST",
       headers: authHeader(driverToken),
-      body: JSON.stringify({ lat: ORIGIN.lat + 0.001, lng: ORIGIN.lng + 0.001, offeredFareCents: ride.fareEstimate }),
+      body: JSON.stringify({
+        lat: ORIGIN.lat + 0.001,
+        lng: ORIGIN.lng + 0.001,
+        offeredFareCents: ride.fareEstimate,
+      }),
     });
     // 200/201 = accepted; 422 = expired or price_too_high — both are valid
     // 404 would mean route doesn't exist at all
@@ -412,12 +475,16 @@ describe("Phase 3 — Disputa de corrida (matching)", () => {
       headers: authHeader(passengerToken),
       body: JSON.stringify({ routeType: "livre", origin: ORIGIN, destination: DESTINATION }),
     });
-    const { ride } = await json(rideRes) as { ride: { id: string; fareEstimate: number } };
+    const { ride } = (await json(rideRes)) as { ride: { id: string; fareEstimate: number } };
 
     const bidRes = await app.request(`/matching/rides/${ride.id}/disputa/bid`, {
       method: "POST",
       headers: authHeader(driverToken),
-      body: JSON.stringify({ lat: ORIGIN.lat + 0.001, lng: ORIGIN.lng + 0.001, offeredFareCents: ride.fareEstimate }),
+      body: JSON.stringify({
+        lat: ORIGIN.lat + 0.001,
+        lng: ORIGIN.lng + 0.001,
+        offeredFareCents: ride.fareEstimate,
+      }),
     });
     expect([200, 201]).toContain(bidRes.status);
   });
@@ -428,12 +495,16 @@ describe("Phase 3 — Disputa de corrida (matching)", () => {
       headers: authHeader(passengerToken),
       body: JSON.stringify({ routeType: "livre", origin: ORIGIN, destination: DESTINATION }),
     });
-    const { ride } = await json(rideRes) as { ride: { id: string; fareEstimate: number } };
+    const { ride } = (await json(rideRes)) as { ride: { id: string; fareEstimate: number } };
 
     const bidRes = await app.request(`/matching/rides/${ride.id}/disputa/bid`, {
       method: "POST",
       headers: authHeader(driverToken),
-      body: JSON.stringify({ lat: ORIGIN.lat + 0.001, lng: ORIGIN.lng + 0.001, offeredFareCents: ride.fareEstimate + 1000 }),
+      body: JSON.stringify({
+        lat: ORIGIN.lat + 0.001,
+        lng: ORIGIN.lng + 0.001,
+        offeredFareCents: ride.fareEstimate + 1000,
+      }),
     });
     expect(bidRes.status).toBe(422);
     const body = await json(bidRes);
@@ -448,20 +519,28 @@ describe("Phase 3 — Disputa de corrida (matching)", () => {
       headers: authHeader(passengerToken),
       body: JSON.stringify({ routeType: "livre", origin: ORIGIN, destination: DESTINATION }),
     });
-    const { ride } = await json(rideRes) as { ride: { id: string; fareEstimate: number } };
+    const { ride } = (await json(rideRes)) as { ride: { id: string; fareEstimate: number } };
 
     // First bid
     await app.request(`/matching/rides/${ride.id}/disputa/bid`, {
       method: "POST",
       headers: authHeader(driverToken),
-      body: JSON.stringify({ lat: ORIGIN.lat + 0.001, lng: ORIGIN.lng + 0.001, offeredFareCents: ride.fareEstimate }),
+      body: JSON.stringify({
+        lat: ORIGIN.lat + 0.001,
+        lng: ORIGIN.lng + 0.001,
+        offeredFareCents: ride.fareEstimate,
+      }),
     });
 
     // Second bid from same driver
     const dupRes = await app.request(`/matching/rides/${ride.id}/disputa/bid`, {
       method: "POST",
       headers: authHeader(driverToken),
-      body: JSON.stringify({ lat: ORIGIN.lat + 0.001, lng: ORIGIN.lng + 0.001, offeredFareCents: ride.fareEstimate }),
+      body: JSON.stringify({
+        lat: ORIGIN.lat + 0.001,
+        lng: ORIGIN.lng + 0.001,
+        offeredFareCents: ride.fareEstimate,
+      }),
     });
     expect([409, 422]).toContain(dupRes.status); // ALREADY_BID → 409
   });
@@ -471,12 +550,10 @@ describe("Phase 3 — Disputa de corrida (matching)", () => {
 
 describe("Phase 4 — Ride detail query", () => {
   let passengerToken: string;
-  let driverToken: string;
 
   beforeAll(async () => {
     passengerToken = await getToken(PASSENGER_PHONE);
     ensureDriver(DRIVER_PHONE, "Carlos Moto");
-    driverToken = await getToken(DRIVER_PHONE);
   });
 
   it("GET /rides/:id returns ride object for passenger", async () => {
@@ -485,7 +562,7 @@ describe("Phase 4 — Ride detail query", () => {
       headers: authHeader(passengerToken),
       body: JSON.stringify({ routeType: "livre", origin: ORIGIN, destination: DESTINATION }),
     });
-    const { ride } = await json(createRes) as { ride: { id: string } };
+    const { ride } = (await json(createRes)) as { ride: { id: string } };
 
     const getRes = await app.request(`/rides/${ride.id}`, { headers: authHeader(passengerToken) });
     expect(getRes.status).toBe(200);
@@ -518,7 +595,7 @@ describe("Phase 5 — Cancellation", () => {
       headers: authHeader(passengerToken),
       body: JSON.stringify({ routeType: "livre", origin: ORIGIN, destination: DESTINATION }),
     });
-    const { ride } = await json(createRes) as { ride: { id: string } };
+    const { ride } = (await json(createRes)) as { ride: { id: string } };
 
     const cancelRes = await app.request(`/rides/${ride.id}/cancel`, {
       method: "PATCH",
@@ -570,7 +647,7 @@ describe("Phase 6 — VIP window (patron driver)", () => {
       body: JSON.stringify({ routeType: "livre", origin: ORIGIN, destination: DESTINATION }),
     });
     expect(createRes.status).toBe(201);
-    const { ride } = await json(createRes) as { ride: { id: string } };
+    const { ride } = (await json(createRes)) as { ride: { id: string } };
 
     const getRes = await app.request(`/rides/${ride.id}`, { headers: authHeader(driverToken) });
     expect(getRes.status).toBe(200);

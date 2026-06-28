@@ -16,16 +16,9 @@ import { z } from "zod";
 import { HTTPException } from "hono/http-exception";
 
 import { requireAuth } from "../middleware/auth.js";
-import {
-  DeliverySchema,
-  LatLngSchema,
-} from "../models/schemas.js";
+import { DeliverySchema, LatLngSchema } from "../models/schemas.js";
 import type { Delivery } from "../models/schemas.js";
-import {
-  MOCK_WALLETS,
-  findWalletByUserId,
-  createTransaction,
-} from "../models/mock-data.js";
+import { findWalletByUserId, createTransaction } from "../models/mock-data.js";
 
 export const deliveryRouter = new Hono();
 
@@ -41,8 +34,8 @@ function findDeliveryById(id: string): Delivery | undefined {
 
 // ─── Pricing helper ───────────────────────────────────────────────────────────
 
-const DELIVERY_BASE_CENTS = 600;        // R$6.00 base
-const DELIVERY_PER_KM_CENTS = 200;      // R$2.00/km
+const DELIVERY_BASE_CENTS = 600; // R$6.00 base
+const DELIVERY_PER_KM_CENTS = 200; // R$2.00/km
 const DELIVERY_PLATFORM_FEE_PERCENT = 15;
 
 function estimateDeliveryFare(distanceKm: number): number {
@@ -121,7 +114,10 @@ deliveryRouter.get("/", (c) => {
   const total = deliveries.length;
   const data = deliveries.slice((page - 1) * limit, (page - 1) * limit + limit);
 
-  return c.json({ data, pagination: { page, limit, total, hasNext: (page - 1) * limit + limit < total } });
+  return c.json({
+    data,
+    pagination: { page, limit, total, hasNext: (page - 1) * limit + limit < total },
+  });
 });
 
 // ─── GET /deliveries/available — pending deliveries for motoboys ──────────────
@@ -152,10 +148,16 @@ deliveryRouter.patch("/:id/accept", (c) => {
   }
   // Check assignment first (409 Conflict) — takes priority over status check
   if (delivery.motoboyId !== null) {
-    return c.json({ code: "ALREADY_ASSIGNED", message: "Entrega já foi aceita por outro motoboy" }, 409);
+    return c.json(
+      { code: "ALREADY_ASSIGNED", message: "Entrega já foi aceita por outro motoboy" },
+      409,
+    );
   }
   if (delivery.status !== "pending") {
-    return c.json({ code: "INVALID_STATUS", message: `Entrega não está pendente (status: ${delivery.status})` }, 422);
+    return c.json(
+      { code: "INVALID_STATUS", message: `Entrega não está pendente (status: ${delivery.status})` },
+      422,
+    );
   }
 
   const idx = MOCK_DELIVERIES.indexOf(delivery);
@@ -190,7 +192,9 @@ deliveryRouter.patch("/:id/status", zValidator("json", UpdateDeliveryStatusSchem
     return c.json({ code: "NOT_FOUND", message: "Entrega não encontrada" }, 404);
   }
   if (delivery.motoboyId !== userId) {
-    throw new HTTPException(403, { message: "Apenas o motoboy responsável pode atualizar o status" });
+    throw new HTTPException(403, {
+      message: "Apenas o motoboy responsável pode atualizar o status",
+    });
   }
 
   const allowed = ValidTransitions[delivery.status] ?? [];

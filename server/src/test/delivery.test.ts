@@ -36,18 +36,78 @@ beforeAll(() => {
       (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
   `);
-  insUser.run("00000000-0000-0000-0000-000000000001", "Ana Costa",       "ana@vuup.app",     "+5511999990001", "passenger", 4.8, 42,  YESTERDAY, NOW);
-  insUser.run("00000000-0000-0000-0000-000000000002", "Carlos Moto",     "carlos@vuup.app",  "+5511999990002", "driver",    4.9, 327, YESTERDAY, NOW);
-  insUser.run("00000000-0000-0000-0000-000000000003", "Roberto Fundador","roberto@vuup.app", "+5511999990003", "founder",   4.7, 15,  YESTERDAY, NOW);
-  insUser.run("00000000-0000-0000-0000-000000000004", "Marcos Motoboy",  "marcos@vuup.app",  "+5511999990004", "motoboy",   4.6, 89,  YESTERDAY, NOW);
-  insUser.run("00000000-0000-0000-0000-000000000005", "Bia Motoboy",     "bia@vuup.app",     "+5511999990005", "motoboy",   4.5, 67,  YESTERDAY, NOW);
-  insUser.run("00000000-0000-0000-0000-000000000099", "Admin",           "admin@vuup.app",   "+5511999990099", "admin",     5.0, 0,   YESTERDAY, NOW);
+  insUser.run(
+    "00000000-0000-0000-0000-000000000001",
+    "Ana Costa",
+    "ana@vuup.app",
+    "+5511999990001",
+    "passenger",
+    4.8,
+    42,
+    YESTERDAY,
+    NOW,
+  );
+  insUser.run(
+    "00000000-0000-0000-0000-000000000002",
+    "Carlos Moto",
+    "carlos@vuup.app",
+    "+5511999990002",
+    "driver",
+    4.9,
+    327,
+    YESTERDAY,
+    NOW,
+  );
+  insUser.run(
+    "00000000-0000-0000-0000-000000000003",
+    "Roberto Fundador",
+    "roberto@vuup.app",
+    "+5511999990003",
+    "founder",
+    4.7,
+    15,
+    YESTERDAY,
+    NOW,
+  );
+  insUser.run(
+    "00000000-0000-0000-0000-000000000004",
+    "Marcos Motoboy",
+    "marcos@vuup.app",
+    "+5511999990004",
+    "motoboy",
+    4.6,
+    89,
+    YESTERDAY,
+    NOW,
+  );
+  insUser.run(
+    "00000000-0000-0000-0000-000000000005",
+    "Bia Motoboy",
+    "bia@vuup.app",
+    "+5511999990005",
+    "motoboy",
+    4.5,
+    67,
+    YESTERDAY,
+    NOW,
+  );
+  insUser.run(
+    "00000000-0000-0000-0000-000000000099",
+    "Admin",
+    "admin@vuup.app",
+    "+5511999990099",
+    "admin",
+    5.0,
+    0,
+    YESTERDAY,
+    NOW,
+  );
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function json(res: Response): Promise<Record<string, unknown>> {
-  return res.json();
+  return (await res.json()) as Record<string, unknown>;
 }
 
 async function getToken(phone: string): Promise<string> {
@@ -73,11 +133,13 @@ function ensureMotoboyUser(phone: string, fullName: string): string {
     (existing as { role: string }).role = "motoboy";
     // Also ensure SQLite has this user with the same ID
     const now = new Date().toISOString();
-    db.prepare(`
+    db.prepare(
+      `
       INSERT OR IGNORE INTO users
         (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
       VALUES (?, ?, ?, ?, 'motoboy', 'active', null, 0, ?, ?)
-    `).run(existing.id, fullName, `${phone.replace(/\D/g, "")}@test.vuup.app`, phone, now, now);
+    `,
+    ).run(existing.id, fullName, `${phone.replace(/\D/g, "")}@test.vuup.app`, phone, now, now);
     return existing.id;
   }
   const id = crypto.randomUUID();
@@ -97,11 +159,13 @@ function ensureMotoboyUser(phone: string, fullName: string): string {
     updatedAt: now,
   });
   // Also insert into SQLite with the same ID so auth finds it
-  db.prepare(`
+  db.prepare(
+    `
     INSERT OR IGNORE INTO users
       (id, full_name, email, phone, role, status, rating, total_rides, created_at, updated_at)
     VALUES (?, ?, ?, ?, 'motoboy', 'active', null, 0, ?, ?)
-  `).run(id, fullName, `${phone.replace(/\D/g, "")}@test.vuup.app`, phone, now, now);
+  `,
+  ).run(id, fullName, `${phone.replace(/\D/g, "")}@test.vuup.app`, phone, now, now);
   return id;
 }
 
@@ -121,12 +185,22 @@ function ensureWalletForUser(userId: string) {
   });
 }
 
-const CLIENT_PHONE = "+5511999990001";  // Ana — passenger/client
+const CLIENT_PHONE = "+5511999990001"; // Ana — passenger/client
 const MOTOBOY_PHONE = "+5511999990010"; // Motoboy 1
 const MOTOBOY2_PHONE = "+5511999990011"; // Motoboy 2
 
-const PICKUP = { lat: -23.5505, lng: -46.6333, address: "Av. Paulista, 1000", contactName: "Remetente Silva" };
-const DROPOFF = { lat: -23.5489, lng: -46.6388, address: "Rua Augusta, 500", contactName: "Destinatario Santos" };
+const PICKUP = {
+  lat: -23.5505,
+  lng: -46.6333,
+  address: "Av. Paulista, 1000",
+  contactName: "Remetente Silva",
+};
+const DROPOFF = {
+  lat: -23.5489,
+  lng: -46.6388,
+  address: "Rua Augusta, 500",
+  contactName: "Destinatario Santos",
+};
 const PACKAGE = "Caixa pequena — frágil";
 
 // ─── Test setup ───────────────────────────────────────────────────────────────
@@ -188,7 +262,11 @@ describe("POST /deliveries", () => {
     const res = await app.request("/deliveries", {
       method: "POST",
       headers: authHeader(token),
-      body: JSON.stringify({ pickup: PICKUP, dropoff: DROPOFF, packageDescription: "x".repeat(201) }),
+      body: JSON.stringify({
+        pickup: PICKUP,
+        dropoff: DROPOFF,
+        packageDescription: "x".repeat(201),
+      }),
     });
     expect(res.status).toBe(400);
   });
@@ -242,7 +320,7 @@ describe("PATCH /deliveries/:id/accept", () => {
       headers: authHeader(clientToken),
       body: JSON.stringify({ pickup: PICKUP, dropoff: DROPOFF, packageDescription: PACKAGE }),
     });
-    const { delivery } = await json(createRes) as { delivery: { id: string } };
+    const { delivery } = (await json(createRes)) as { delivery: { id: string } };
 
     const motoboyId = ensureMotoboyUser(MOTOBOY_PHONE, "Motoboy Um");
     ensureWalletForUser(motoboyId);
@@ -252,7 +330,7 @@ describe("PATCH /deliveries/:id/accept", () => {
       headers: authHeader(motoboyToken),
     });
     expect(res.status).toBe(200);
-    const body = await json(res) as Record<string, unknown>;
+    const body = (await json(res)) as Record<string, unknown>;
     expect(body.status).toBe("accepted");
     expect(body.motoboyId).toBeTruthy();
   });
@@ -275,7 +353,7 @@ describe("PATCH /deliveries/:id/accept", () => {
       headers: authHeader(clientToken),
       body: JSON.stringify({ pickup: PICKUP, dropoff: DROPOFF, packageDescription: PACKAGE }),
     });
-    const { delivery } = await json(createRes) as { delivery: { id: string } };
+    const { delivery } = (await json(createRes)) as { delivery: { id: string } };
 
     const motoboy1Id = ensureMotoboyUser(MOTOBOY_PHONE, "Motoboy Um");
     ensureWalletForUser(motoboy1Id);
@@ -316,7 +394,9 @@ describe("Delivery state machine (full happy path)", () => {
       body: JSON.stringify({ pickup: PICKUP, dropoff: DROPOFF, packageDescription: PACKAGE }),
     });
     expect(createRes.status).toBe(201);
-    const { delivery } = await json(createRes) as { delivery: { id: string; fareEstimate: number } };
+    const { delivery } = (await json(createRes)) as {
+      delivery: { id: string; fareEstimate: number };
+    };
 
     // Accept
     const motoboyToken = await getToken(MOTOBOY_PHONE);
@@ -333,7 +413,7 @@ describe("Delivery state machine (full happy path)", () => {
       body: JSON.stringify({ status: "picked_up" }),
     });
     expect(pickRes.status).toBe(200);
-    const pickBody = await json(pickRes) as Record<string, unknown>;
+    const pickBody = (await json(pickRes)) as Record<string, unknown>;
     expect(pickBody.status).toBe("picked_up");
 
     // in_transit
@@ -354,7 +434,7 @@ describe("Delivery state machine (full happy path)", () => {
       body: JSON.stringify({ status: "delivered" }),
     });
     expect(deliveredRes.status).toBe(200);
-    const deliveredBody = await json(deliveredRes) as Record<string, unknown>;
+    const deliveredBody = (await json(deliveredRes)) as Record<string, unknown>;
     expect(deliveredBody.status).toBe("delivered");
     expect(typeof deliveredBody.fareActual).toBe("number");
 
@@ -379,12 +459,23 @@ describe("Delivery state machine (full happy path)", () => {
       headers: authHeader(clientToken),
       body: JSON.stringify({ pickup: PICKUP, dropoff: DROPOFF, packageDescription: PACKAGE }),
     });
-    const { delivery } = await json(createRes) as { delivery: { id: string } };
+    const { delivery } = (await json(createRes)) as { delivery: { id: string } };
 
     const motoboyToken = await getToken(MOTOBOY_PHONE);
-    await app.request(`/deliveries/${delivery.id}/accept`, { method: "PATCH", headers: authHeader(motoboyToken) });
-    await app.request(`/deliveries/${delivery.id}/status`, { method: "PATCH", headers: authHeader(motoboyToken), body: JSON.stringify({ status: "picked_up" }) });
-    await app.request(`/deliveries/${delivery.id}/status`, { method: "PATCH", headers: authHeader(motoboyToken), body: JSON.stringify({ status: "in_transit" }) });
+    await app.request(`/deliveries/${delivery.id}/accept`, {
+      method: "PATCH",
+      headers: authHeader(motoboyToken),
+    });
+    await app.request(`/deliveries/${delivery.id}/status`, {
+      method: "PATCH",
+      headers: authHeader(motoboyToken),
+      body: JSON.stringify({ status: "picked_up" }),
+    });
+    await app.request(`/deliveries/${delivery.id}/status`, {
+      method: "PATCH",
+      headers: authHeader(motoboyToken),
+      body: JSON.stringify({ status: "in_transit" }),
+    });
 
     const motoboyWalletBefore = MOCK_WALLETS.find((w) => w.userId === motoboyId)?.balanceCents ?? 0;
 
@@ -394,7 +485,7 @@ describe("Delivery state machine (full happy path)", () => {
       body: JSON.stringify({ status: "failed" }),
     });
     expect(failedRes.status).toBe(200);
-    const failedBody = await json(failedRes) as Record<string, unknown>;
+    const failedBody = (await json(failedRes)) as Record<string, unknown>;
     expect(failedBody.status).toBe("failed");
 
     // No payment settlement on failure — wallet unchanged
@@ -412,10 +503,13 @@ describe("Delivery state machine (full happy path)", () => {
       headers: authHeader(clientToken),
       body: JSON.stringify({ pickup: PICKUP, dropoff: DROPOFF, packageDescription: PACKAGE }),
     });
-    const { delivery } = await json(createRes) as { delivery: { id: string } };
+    const { delivery } = (await json(createRes)) as { delivery: { id: string } };
 
     const motoboyToken = await getToken(MOTOBOY_PHONE);
-    await app.request(`/deliveries/${delivery.id}/accept`, { method: "PATCH", headers: authHeader(motoboyToken) });
+    await app.request(`/deliveries/${delivery.id}/accept`, {
+      method: "PATCH",
+      headers: authHeader(motoboyToken),
+    });
 
     // Try to jump directly from accepted to delivered (must go through picked_up → in_transit first)
     const res = await app.request(`/deliveries/${delivery.id}/status`, {
@@ -440,10 +534,13 @@ describe("Delivery state machine (full happy path)", () => {
       headers: authHeader(clientToken),
       body: JSON.stringify({ pickup: PICKUP, dropoff: DROPOFF, packageDescription: PACKAGE }),
     });
-    const { delivery } = await json(createRes) as { delivery: { id: string } };
+    const { delivery } = (await json(createRes)) as { delivery: { id: string } };
 
     const token1 = await getToken(MOTOBOY_PHONE);
-    await app.request(`/deliveries/${delivery.id}/accept`, { method: "PATCH", headers: authHeader(token1) });
+    await app.request(`/deliveries/${delivery.id}/accept`, {
+      method: "PATCH",
+      headers: authHeader(token1),
+    });
 
     const token2 = await getToken(MOTOBOY2_PHONE);
     const res = await app.request(`/deliveries/${delivery.id}/status`, {
@@ -491,14 +588,19 @@ describe("GET /deliveries", () => {
       headers: authHeader(clientToken),
       body: JSON.stringify({ pickup: PICKUP, dropoff: DROPOFF, packageDescription: PACKAGE }),
     });
-    const { delivery } = await json(createRes) as { delivery: { id: string } };
+    const { delivery } = (await json(createRes)) as { delivery: { id: string } };
 
     const motoboyId = ensureMotoboyUser(MOTOBOY_PHONE, "Motoboy Um");
     ensureWalletForUser(motoboyId);
     const motoboyToken = await getToken(MOTOBOY_PHONE);
-    await app.request(`/deliveries/${delivery.id}/accept`, { method: "PATCH", headers: authHeader(motoboyToken) });
+    await app.request(`/deliveries/${delivery.id}/accept`, {
+      method: "PATCH",
+      headers: authHeader(motoboyToken),
+    });
 
-    const res = await app.request("/deliveries?role=motoboy", { headers: authHeader(motoboyToken) });
+    const res = await app.request("/deliveries?role=motoboy", {
+      headers: authHeader(motoboyToken),
+    });
     expect(res.status).toBe(200);
     const body = await json(res);
     expect((body.data as unknown[]).length).toBeGreaterThanOrEqual(1);

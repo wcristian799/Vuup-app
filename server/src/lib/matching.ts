@@ -373,7 +373,7 @@ export function createSwarmEvent(
  * When confirmCount reaches SWARM_THRESHOLD, swarmActive is set and
  * a "swarm_activated" broadcast is emitted (triggers The Shield UI).
  */
-export function confirmSwarmEvent(eventId: string, userId: string): SwarmEvent | null {
+export function confirmSwarmEvent(eventId: string, _userId: string): SwarmEvent | null {
   const evt = SWARM_EVENTS.find((e) => e.id === eventId);
   if (!evt || evt.resolvedAt) return null;
 
