@@ -6,7 +6,7 @@ Este documento permite publicar com **um único comando** assim que o token cheg
 
 ## Estado verificado (28/06/2026)
 
-- Branch: `integration/all-waves` — 25 commits à frente de `origin/main`, 207 arquivos (~35.5k inserções).
+- Branch: `integration/all-waves` — 27 commits à frente de `origin/main`, 209 arquivos (~35.6k inserções).
 - `npm run typecheck` (frontend): ✅ limpo
 - `npm test` (frontend): ✅ 41/41
 - `npm run test:server`: ✅ 165/165
