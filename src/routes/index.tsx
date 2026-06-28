@@ -31,8 +31,9 @@ const NAV_ITEMS = [
 
 function VuupPassengerApp() {
   // Track the user's confirmed destination from the map panel
-  const [pendingDestination, setPendingDestination] =
-    React.useState<SelectedDestination | null>(null);
+  const [pendingDestination, setPendingDestination] = React.useState<SelectedDestination | null>(
+    null,
+  );
 
   // Dispute / realtime ride state
   const { status: disputeStatus, startDispute, endDispute, bids, winnerId } = useRideDispute();
@@ -89,70 +90,13 @@ function VuupPassengerApp() {
       {/* Status bar */}
       <StatusBar />
 
-      {/* Main content area */}
+      {/* Main content area — home shows the live map.
+       * Other sections (Corridas, Carteira, Perfil, Segurança) are now their
+       * own routes reachable via the bottom nav, not in-page tabs. */}
       <div className="absolute inset-0 pt-8 pb-20 overflow-hidden">
-        {/*
-         * Map and Matrix are always rendered (map needs Leaflet to stay mounted),
-         * so they use the original opacity-toggle approach.
-         * All other tabs use ScreenTransition for animated entrance/exit.
-         */}
-
-        {/* Mapa Vivo — always mounted, opacity-toggled */}
-        <div
-          className={cn(
-            "absolute inset-0 pt-8 pb-20 transition-opacity duration-200",
-            activeTab === "map"
-              ? "opacity-100 pointer-events-auto z-10"
-              : "opacity-0 pointer-events-none z-0",
-          )}
-          aria-hidden={activeTab !== "map"}
-        >
+        <div className="absolute inset-0 pt-8 pb-20" aria-label="Mapa Vivo">
           <MapaVivo onSelectRide={handleSelectRide} />
         </div>
-
-        {/* Matrix Slider — always mounted */}
-        <div
-          className={cn(
-            "absolute inset-0 pt-8 pb-20 transition-opacity duration-200",
-            activeTab === "matrix"
-              ? "opacity-100 pointer-events-auto z-10"
-              : "opacity-0 pointer-events-none z-0",
-          )}
-          aria-hidden={activeTab !== "matrix"}
-        >
-          <RideSelectorMatrix onConfirm={handleConfirmRide} destination="Destino selecionado" />
-        </div>
-
-        {/* Animated tabs — rendered only when active, animated in/out */}
-        <AnimatePresence mode="wait" initial={false}>
-          {activeTab === "shield" && (
-            <ScreenTransition motionKey="shield">
-              <div className="absolute inset-0 pt-8 pb-20" aria-label="Centro de segurança">
-                <SafetyCenter />
-              </div>
-            </ScreenTransition>
-          )}
-          {activeTab === "entregas" && (
-            <ScreenTransition motionKey="entregas">
-              <div
-                className="absolute inset-0 pt-8 pb-20 overflow-hidden"
-                aria-label="Entregas e Comércio"
-              >
-                <EntregasScreen />
-              </div>
-            </ScreenTransition>
-          )}
-          {activeTab === "profile" && (
-            <ScreenTransition motionKey="profile">
-              <div
-                className="absolute inset-0 pt-8 pb-20 overflow-hidden"
-                aria-label="Perfil do motorista"
-              >
-                <DriverDashboard isPatrono={true} tier="ouro" />
-              </div>
-            </ScreenTransition>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Realtime dispute status banner — shown while searching or matching */}
@@ -201,9 +145,7 @@ function VuupPassengerApp() {
               {disputeStatus === "cancelled" && "Corrida cancelada"}
             </p>
             {pendingDestination && (
-              <p className="text-xs text-muted-foreground truncate">
-                → {pendingDestination.label}
-              </p>
+              <p className="text-xs text-muted-foreground truncate">→ {pendingDestination.label}</p>
             )}
           </div>
           <button
@@ -228,13 +170,13 @@ function VuupPassengerApp() {
           )}
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neon/20 shrink-0">
-            <span className="text-neon text-sm font-bold" aria-hidden="true">✓</span>
+            <span className="text-neon text-sm font-bold" aria-hidden="true">
+              ✓
+            </span>
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-neon">Motorista encontrado!</p>
-            <p className="text-xs text-muted-foreground truncate">
-              A caminho do seu endereço...
-            </p>
+            <p className="text-xs text-muted-foreground truncate">A caminho do seu endereço...</p>
           </div>
           <button
             className="text-muted-foreground hover:text-foreground text-lg leading-none shrink-0 -mt-1"
