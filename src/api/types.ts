@@ -11,12 +11,7 @@ export type UserRole = "passenger" | "driver" | "motoboy" | "founder" | "admin";
 export type UserStatus = "active" | "suspended" | "pending_verification";
 export type RouteType = "livre" | "fixa" | "programada";
 export type RideStatus =
-  | "searching"
-  | "accepted"
-  | "driver_en_route"
-  | "in_progress"
-  | "completed"
-  | "cancelled";
+  "searching" | "accepted" | "driver_en_route" | "in_progress" | "completed" | "cancelled";
 export type TransactionType =
   | "ride_earning"
   | "ride_payment"
@@ -25,10 +20,14 @@ export type TransactionType =
   | "passive_income"
   | "coupon_credit"
   | "campaign_bonus"
+  | "campaign_discount"
+  | "transfer_in"
+  | "transfer_out"
   | "withdrawal"
   | "deposit"
   | "refund"
-  | "platform_fee";
+  | "platform_fee"
+  | "sociedade_upgrade";
 export type SafetyEventType =
   | "sos_triggered"
   | "route_deviation"
@@ -104,7 +103,99 @@ export interface Wallet {
   balanceCents: number;
   pendingCents: number;
   lifetimeEarningsCents: number;
+  campaignDiscountRemainingDays: number;
+  campaignDiscountDailyAmountCents: number;
+  campaignDiscountStartedAt: string | null;
   updatedAt: string;
+  // Enriched fields from GET /wallet
+  passiveIncomeSharePercent?: number;
+  sociedadeNivel?: SociedadeNivel;
+  campaignDiscount?: {
+    remainingDays: number;
+    dailyAmountCents: number;
+    totalRemainingCents: number;
+  } | null;
+}
+
+// ─── Onda 5: Payment Gateway ──────────────────────────────────────────────────
+
+export type PaymentMethod = "wallet" | "pix" | "credit_card";
+export type PaymentStatus = "pending" | "processing" | "approved" | "failed" | "refunded";
+
+export interface PaymentGatewayTransaction {
+  id: string;
+  walletTransactionId: string | null;
+  userId: string;
+  rideId: string | null;
+  amountCents: number;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  gatewayRef: string | null;
+  failureReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Onda 5: Wallet Transfer ──────────────────────────────────────────────────
+
+export type TransferStatus = "pending" | "completed" | "failed" | "cancelled";
+
+export interface WalletTransfer {
+  id: string;
+  fromWalletId: string;
+  toWalletId: string;
+  amountCents: number;
+  description: string;
+  status: TransferStatus;
+  scheduledAt: string | null;
+  executedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WalletTransferRequest {
+  toUserId: string;
+  amountCents: number;
+  description?: string;
+  scheduledAt?: string;
+}
+
+// ─── Onda 5: Campaign Discount ────────────────────────────────────────────────
+
+export interface CampaignDiscount {
+  id: string;
+  userId: string;
+  totalDays: number;
+  dailyAmountCents: number;
+  daysRemaining: number;
+  totalCreditedCents: number;
+  activatedAt: string;
+  lastAppliedAt: string | null;
+  completedAt: string | null;
+  isActive: boolean;
+}
+
+// ─── Onda 5: Sociedade ────────────────────────────────────────────────────────
+
+export type SociedadeNivel = "starter" | "bronze" | "silver" | "gold" | "platinum";
+
+export interface SociedadeParticipacao {
+  id: string;
+  userId: string;
+  nivel: SociedadeNivel;
+  participacaoPercent: number;
+  passiveIncomeSharePercent: number;
+  totalInvestedCents: number;
+  totalReceivedPassiveIncomeCents: number;
+  zoneId: string | null;
+  upgradedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  nextUpgrade?: {
+    targetNivel: SociedadeNivel;
+    costCents: number | null;
+    passiveIncomeSharePercent: number;
+  } | null;
 }
 
 export interface Transaction {
@@ -166,5 +257,5 @@ export interface ApiError {
 // Reads from Vite env var VITE_API_URL; falls back to localhost for dev.
 // Add VITE_API_URL to your .env or .env.local to override.
 export const API_BASE_URL: string =
-  (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL
-  ?? "http://localhost:3001";
+  (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ??
+  "http://localhost:3001";

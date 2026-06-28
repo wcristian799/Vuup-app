@@ -183,6 +183,10 @@ export const WalletSchema = z.object({
   balanceCents: z.number().int(), // can be negative for debt
   pendingCents: z.number().int().nonnegative(), // locked / in-transit
   lifetimeEarningsCents: z.number().int().nonnegative(),
+  // Campaign discount tracking (R$50/day for 60 days)
+  campaignDiscountRemainingDays: z.number().int().nonnegative(),
+  campaignDiscountDailyAmountCents: z.number().int().nonnegative(),
+  campaignDiscountStartedAt: TimestampSchema.nullable(),
   updatedAt: TimestampSchema,
 });
 export type Wallet = z.infer<typeof WalletSchema>;
@@ -195,10 +199,14 @@ export const TransactionTypeSchema = z.enum([
   "passive_income", // founder dividend
   "coupon_credit",
   "campaign_bonus",
+  "campaign_discount", // daily R$50 campaign discount
+  "transfer_in",       // received transfer from another wallet
+  "transfer_out",      // sent transfer to another wallet
   "withdrawal",
   "deposit",
   "refund",
   "platform_fee",
+  "sociedade_upgrade", // sociedade upgrade payment
 ]);
 
 export const TransactionSchema = z.object({
@@ -436,3 +444,152 @@ export const RideRequestV2Schema = RideRequestSchema.extend({
   },
   { message: "scheduledAt is required for programada rides", path: ["scheduledAt"] },
 );
+
+// ─── Onda 5: Payment Gateway (stub) ──────────────────────────────────────────
+
+export const PaymentMethodSchema = z.enum([
+  "wallet",    // pay from Carteira Vuup balance
+  "pix",       // Pix (gateway stub)
+  "credit_card", // credit card (gateway stub)
+]);
+export type PaymentMethod = z.infer<typeof PaymentMethodSchema>;
+
+export const PaymentStatusSchema = z.enum([
+  "pending",
+  "processing",
+  "approved",
+  "failed",
+  "refunded",
+]);
+export type PaymentStatus = z.infer<typeof PaymentStatusSchema>;
+
+/**
+ * PaymentGatewayTransaction: records an outgoing payment intent through the
+ * gateway (stub). In production, this would be replaced with a real servico
+ * (e.g., Asaas, Stripe, PagSeguro).
+ */
+export const PaymentGatewayTransactionSchema = z.object({
+  id: IdSchema,
+  walletTransactionId: IdSchema.nullable(), // linked wallet transaction after settlement
+  userId: IdSchema,
+  rideId: IdSchema.nullable(),
+  amountCents: z.number().int().positive(),
+  method: PaymentMethodSchema,
+  status: PaymentStatusSchema,
+  gatewayRef: z.string().nullable(), // external gateway reference
+  failureReason: z.string().nullable(),
+  createdAt: TimestampSchema,
+  updatedAt: TimestampSchema,
+});
+export type PaymentGatewayTransaction = z.infer<typeof PaymentGatewayTransactionSchema>;
+
+// ─── Onda 5: Wallet Transfer ──────────────────────────────────────────────────
+
+export const TransferStatusSchema = z.enum(["pending", "completed", "failed", "cancelled"]);
+export type TransferStatus = z.infer<typeof TransferStatusSchema>;
+
+/**
+ * WalletTransfer: tracks a value transfer between two Carteira Vuup wallets.
+ * Supports immediate (daily) and scheduled transfers.
+ */
+export const WalletTransferSchema = z.object({
+  id: IdSchema,
+  fromWalletId: IdSchema,
+  toWalletId: IdSchema,
+  amountCents: z.number().int().positive(),
+  description: z.string().max(200),
+  status: TransferStatusSchema,
+  /** When set, the transfer fires at this time (agendada); null = immediate */
+  scheduledAt: TimestampSchema.nullable(),
+  executedAt: TimestampSchema.nullable(),
+  createdAt: TimestampSchema,
+  updatedAt: TimestampSchema,
+});
+export type WalletTransfer = z.infer<typeof WalletTransferSchema>;
+
+export const WalletTransferRequestSchema = z.object({
+  toUserId: IdSchema,
+  amountCents: z.number().int().min(100, "Minimum transfer is R$1,00"),
+  description: z.string().max(200).default("Transferência Vuup"),
+  /** ISO timestamp for scheduled transfer; omit for immediate */
+  scheduledAt: TimestampSchema.optional(),
+});
+export type WalletTransferRequest = z.infer<typeof WalletTransferRequestSchema>;
+
+// ─── Onda 5: Campaign Discount ────────────────────────────────────────────────
+
+/**
+ * CampaignDiscount: tracks the daily R$50 discount campaign for a user.
+ * For 60 days starting from activation, R$50 is credited to the wallet daily.
+ */
+export const CampaignDiscountSchema = z.object({
+  id: IdSchema,
+  userId: IdSchema,
+  totalDays: z.number().int().positive().default(60),
+  dailyAmountCents: z.number().int().positive().default(5000), // R$50
+  daysRemaining: z.number().int().nonnegative(),
+  totalCreditedCents: z.number().int().nonnegative(),
+  activatedAt: TimestampSchema,
+  lastAppliedAt: TimestampSchema.nullable(),
+  completedAt: TimestampSchema.nullable(),
+  isActive: z.boolean(),
+});
+export type CampaignDiscount = z.infer<typeof CampaignDiscountSchema>;
+
+export const ActivateCampaignDiscountRequestSchema = z.object({
+  /** Optional override for daily amount (admin only); defaults to R$50 */
+  dailyAmountCents: z.number().int().positive().optional(),
+  /** Optional override for total days (admin only); defaults to 60 */
+  totalDays: z.number().int().positive().optional(),
+});
+
+// ─── Onda 5: Upgrade de Sociedade ────────────────────────────────────────────
+
+export const SociedadeNivelSchema = z.enum([
+  "starter",     // base level — no passive income share
+  "bronze",      // 1% passive income share
+  "silver",      // 3% passive income share
+  "gold",        // 7% passive income share
+  "platinum",    // 15% passive income share (founder level)
+]);
+export type SociedadeNivel = z.infer<typeof SociedadeNivelSchema>;
+
+/** Monthly passive income % by nivel */
+export const SOCIEDADE_PASSIVE_INCOME_PERCENT: Record<SociedadeNivel, number> = {
+  starter: 0,
+  bronze: 1,
+  silver: 3,
+  gold: 7,
+  platinum: 15,
+};
+
+/** Upgrade cost in BRL cents per nivel transition */
+export const SOCIEDADE_UPGRADE_COST_CENTS: Partial<Record<string, number>> = {
+  "starter->bronze": 50000,   // R$500
+  "bronze->silver": 150000,   // R$1.500
+  "silver->gold": 500000,     // R$5.000
+  "gold->platinum": 2000000,  // R$20.000
+};
+
+export const SociedadeParticipacaoSchema = z.object({
+  id: IdSchema,
+  userId: IdSchema,
+  nivel: SociedadeNivelSchema,
+  /** Percentage stake in the zone's revenue pool (0-100) */
+  participacaoPercent: z.number().min(0).max(100),
+  passiveIncomeSharePercent: z.number().min(0).max(100),
+  totalInvestedCents: z.number().int().nonnegative(),
+  totalReceivedPassiveIncomeCents: z.number().int().nonnegative(),
+  zoneId: z.string().nullable(), // geographic zone assignment
+  upgradedAt: TimestampSchema.nullable(),
+  createdAt: TimestampSchema,
+  updatedAt: TimestampSchema,
+});
+export type SociedadeParticipacao = z.infer<typeof SociedadeParticipacaoSchema>;
+
+export const SociedadeUpgradeRequestSchema = z.object({
+  targetNivel: SociedadeNivelSchema,
+  /** Pay from wallet (default) or external payment */
+  paymentMethod: PaymentMethodSchema.default("wallet"),
+});
+export type SociedadeUpgradeRequest = z.infer<typeof SociedadeUpgradeRequestSchema>;

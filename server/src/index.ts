@@ -22,6 +22,7 @@ import { safetyRouter } from "./routes/safety.js";
 import { carpoolRouter } from "./routes/carpool.js";
 import { patronRouter } from "./routes/patron.js";
 import { matchingRouter } from "./routes/matching.js";
+import { sociedadeRouter } from "./routes/sociedade.js";
 
 const app = new Hono();
 
@@ -64,6 +65,7 @@ app.route("/safety", safetyRouter); // /safety/*  — protected
 app.route("/carpool", carpoolRouter); // /carpool/* — protected
 app.route("/patron", patronRouter); // /patron/*  — protected
 app.route("/matching", matchingRouter); // /matching/* — protected (Onda 3)
+app.route("/sociedade", sociedadeRouter); // /sociedade/* — protected (Onda 5)
 
 // ─── 404 catch-all ───────────────────────────────────────────────────────────
 
@@ -118,6 +120,16 @@ if (!process.env["VITEST"]) {
     console.log("  GET  /carpool/routes/:id");
     console.log("  POST /carpool/routes");
     console.log("  POST /carpool/routes/:id/join");
+    console.log("  [Onda 5] POST /wallet/transfer");
+    console.log("  [Onda 5] GET  /wallet/transfers");
+    console.log("  [Onda 5] POST /wallet/campaign-discount");
+    console.log("  [Onda 5] POST /wallet/campaign-discount/apply");
+    console.log("  [Onda 5] GET  /wallet/passive-income");
+    console.log("  [Onda 5] POST /wallet/pay-ride");
+    console.log("  [Onda 5] GET  /sociedade");
+    console.log("  [Onda 5] GET  /sociedade/upgrade-options");
+    console.log("  [Onda 5] POST /sociedade/upgrade");
+    console.log("  [Onda 5] GET  /sociedade/passive-income/simulate");
   });
 }
 

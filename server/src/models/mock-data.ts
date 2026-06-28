@@ -13,6 +13,10 @@ import type {
   PatronLink,
   VipWindowState,
   Coupon,
+  PaymentGatewayTransaction,
+  WalletTransfer,
+  CampaignDiscount,
+  SociedadeParticipacao,
 } from "./schemas.js";
 
 const NOW = new Date().toISOString();
@@ -109,6 +113,9 @@ export const MOCK_WALLETS: Wallet[] = [
     balanceCents: 8750,
     pendingCents: 0,
     lifetimeEarningsCents: 0,
+    campaignDiscountRemainingDays: 0,
+    campaignDiscountDailyAmountCents: 0,
+    campaignDiscountStartedAt: null,
     updatedAt: NOW,
   },
   {
@@ -117,6 +124,9 @@ export const MOCK_WALLETS: Wallet[] = [
     balanceCents: 124300,
     pendingCents: 2900,
     lifetimeEarningsCents: 528000,
+    campaignDiscountRemainingDays: 45,
+    campaignDiscountDailyAmountCents: 5000, // R$50/day
+    campaignDiscountStartedAt: new Date(Date.now() - 15 * 86_400_000).toISOString(), // started 15 days ago
     updatedAt: NOW,
   },
   {
@@ -125,6 +135,9 @@ export const MOCK_WALLETS: Wallet[] = [
     balanceCents: 312000,
     pendingCents: 0,
     lifetimeEarningsCents: 1_200_000,
+    campaignDiscountRemainingDays: 0,
+    campaignDiscountDailyAmountCents: 0,
+    campaignDiscountStartedAt: null,
     updatedAt: NOW,
   },
 ];
@@ -233,9 +246,7 @@ export const MOCK_PATRON_LINKS: PatronLink[] = [
   },
 ];
 
-export function findPatronLinkByPassenger(
-  passengerId: string,
-): PatronLink | undefined {
+export function findPatronLinkByPassenger(passengerId: string): PatronLink | undefined {
   return MOCK_PATRON_LINKS.find((l) => l.passengerId === passengerId && l.isActive);
 }
 
@@ -299,3 +310,168 @@ export const MOCK_COUPONS: Coupon[] = [
 export function findCouponByCode(code: string): Coupon | undefined {
   return MOCK_COUPONS.find((c) => c.code === code.toUpperCase());
 }
+
+// ─── Onda 5: Payment Gateway Transactions ────────────────────────────────────
+
+export const MOCK_PAYMENT_GATEWAY_TRANSACTIONS: PaymentGatewayTransaction[] = [];
+
+export function findPaymentGatewayTxById(id: string): PaymentGatewayTransaction | undefined {
+  return MOCK_PAYMENT_GATEWAY_TRANSACTIONS.find((p) => p.id === id);
+}
+
+export function findPaymentGatewayTxByRide(rideId: string): PaymentGatewayTransaction | undefined {
+  return MOCK_PAYMENT_GATEWAY_TRANSACTIONS.find((p) => p.rideId === rideId);
+}
+
+// ─── Onda 5: Wallet Transfers ─────────────────────────────────────────────────
+
+export const MOCK_WALLET_TRANSFERS: WalletTransfer[] = [];
+
+export function findTransferById(id: string): WalletTransfer | undefined {
+  return MOCK_WALLET_TRANSFERS.find((t) => t.id === id);
+}
+
+export function findTransfersByWalletId(walletId: string): WalletTransfer[] {
+  return MOCK_WALLET_TRANSFERS.filter(
+    (t) => t.fromWalletId === walletId || t.toWalletId === walletId,
+  );
+}
+
+// ─── Onda 5: Campaign Discounts ───────────────────────────────────────────────
+
+/** Carlos (driver) already has an active campaign discount (started 15 days ago) */
+export const MOCK_CAMPAIGN_DISCOUNTS: CampaignDiscount[] = [
+  {
+    id: "cd000000-0000-0000-0000-000000000002",
+    userId: "00000000-0000-0000-0000-000000000002",
+    totalDays: 60,
+    dailyAmountCents: 5000,
+    daysRemaining: 45,
+    totalCreditedCents: 75000, // 15 days × R$50
+    activatedAt: new Date(Date.now() - 15 * 86_400_000).toISOString(),
+    lastAppliedAt: YESTERDAY,
+    completedAt: null,
+    isActive: true,
+  },
+];
+
+export function findActiveCampaignDiscount(userId: string): CampaignDiscount | undefined {
+  return MOCK_CAMPAIGN_DISCOUNTS.find((cd) => cd.userId === userId && cd.isActive);
+}
+
+// ─── Onda 5: Sociedade Participação ──────────────────────────────────────────
+
+export const MOCK_SOCIEDADE: SociedadeParticipacao[] = [
+  {
+    id: "sc000000-0000-0000-0000-000000000002",
+    userId: "00000000-0000-0000-0000-000000000002", // Carlos — driver, silver level
+    nivel: "silver",
+    participacaoPercent: 3,
+    passiveIncomeSharePercent: 3,
+    totalInvestedCents: 200000, // R$2.000 total invested
+    totalReceivedPassiveIncomeCents: 42000,
+    zoneId: "zona-pinheiros",
+    upgradedAt: new Date(Date.now() - 30 * 86_400_000).toISOString(),
+    createdAt: YESTERDAY,
+    updatedAt: NOW,
+  },
+  {
+    id: "sc000000-0000-0000-0000-000000000003",
+    userId: "00000000-0000-0000-0000-000000000003", // Roberto — founder, platinum
+    nivel: "platinum",
+    participacaoPercent: 15,
+    passiveIncomeSharePercent: 15,
+    totalInvestedCents: 2_750_000, // R$27.500 total invested
+    totalReceivedPassiveIncomeCents: 1_200_000,
+    zoneId: "zona-pinheiros",
+    upgradedAt: new Date(Date.now() - 180 * 86_400_000).toISOString(),
+    createdAt: YESTERDAY,
+    updatedAt: NOW,
+  },
+];
+
+export function findSociedadeByUserId(userId: string): SociedadeParticipacao | undefined {
+  return MOCK_SOCIEDADE.find((s) => s.userId === userId);
+}
+
+// ─── Wallet mutation helpers (Onda 5) ────────────────────────────────────────
+
+/**
+ * createTransaction: appends a new transaction to MOCK_TRANSACTIONS and
+ * mutates the matching wallet balance atomically (in-memory).
+ */
+export function createTransaction(params: {
+  walletId: string;
+  type: Transaction["type"];
+  amountCents: number; // positive = credit, negative = debit
+  referenceId?: string | null;
+  description: string;
+}): Transaction {
+  const wallet = MOCK_WALLETS.find((w) => w.id === params.walletId);
+  if (!wallet) throw new Error(`Wallet ${params.walletId} not found`);
+
+  wallet.balanceCents += params.amountCents;
+  wallet.updatedAt = new Date().toISOString();
+
+  if (params.amountCents > 0) {
+    wallet.lifetimeEarningsCents += params.amountCents;
+  }
+
+  const tx: Transaction = {
+    id: crypto.randomUUID(),
+    walletId: params.walletId,
+    type: params.type,
+    amountCents: params.amountCents,
+    balanceAfterCents: wallet.balanceCents,
+    referenceId: params.referenceId ?? null,
+    description: params.description,
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_TRANSACTIONS.push(tx);
+  return tx;
+}
+
+/**
+ * settleRidePayment: debits passenger wallet and credits driver wallet when a
+ * ride reaches "completed" status. Returns both transactions.
+ *
+ * If the passenger does not have enough balance, the payment is still
+ * processed (allowed to go negative in mock — in production this would be a
+ * gateway charge to the linked payment method).
+ */
+export function settleRidePayment(
+  rideId: string,
+  passengerId: string,
+  driverId: string,
+  fareActualCents: number,
+  platformFeePercent: number,
+): { passengerTx: Transaction; driverTx: Transaction; platformFeeCents: number } {
+  const passengerWallet = MOCK_WALLETS.find((w) => w.userId === passengerId);
+  const driverWallet = MOCK_WALLETS.find((w) => w.userId === driverId);
+
+  if (!passengerWallet) throw new Error(`Passenger wallet not found for user ${passengerId}`);
+  if (!driverWallet) throw new Error(`Driver wallet not found for user ${driverId}`);
+
+  const platformFeeCents = Math.round((fareActualCents * platformFeePercent) / 100);
+  const driverEarningsCents = fareActualCents - platformFeeCents;
+
+  const passengerTx = createTransaction({
+    walletId: passengerWallet.id,
+    type: "ride_payment",
+    amountCents: -fareActualCents, // debit
+    referenceId: rideId,
+    description: `Corrida #${rideId.slice(-8)} — R$${(fareActualCents / 100).toFixed(2)}`,
+  });
+
+  const driverTx = createTransaction({
+    walletId: driverWallet.id,
+    type: "ride_earning",
+    amountCents: driverEarningsCents, // credit net of platform fee
+    referenceId: rideId,
+    description: `Corrida #${rideId.slice(-8)} — ganho R$${(driverEarningsCents / 100).toFixed(2)} (taxa ${platformFeePercent}%)`,
+  });
+
+  return { passengerTx, driverTx, platformFeeCents };
+}
+

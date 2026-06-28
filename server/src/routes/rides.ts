@@ -25,6 +25,7 @@ import {
   createVipWindow,
   MOCK_VIP_WINDOWS,
   findCouponByCode,
+  settleRidePayment,
 } from "../models/mock-data.js";
 import { calculateFare } from "../lib/pricing.js";
 import type { Modality } from "../models/schemas.js";
@@ -152,13 +153,7 @@ ridesRouter.post("/", zValidator("json", RideRequestV2Schema), (c) => {
   }
 
   // Onda 3: open a Disputa de corrida session (up to 5 drivers, 15s window)
-  openDisputaSession(
-    rideId,
-    userId,
-    body.origin.lat,
-    body.origin.lng,
-    fareBreakdown.totalCents,
-  );
+  openDisputaSession(rideId, userId, body.origin.lat, body.origin.lng, fareBreakdown.totalCents);
 
   return c.json(
     {
@@ -347,6 +342,26 @@ ridesRouter.patch(
     if (nextStatus === "completed") {
       updated.completedAt = now;
       updated.fareActual = ride.fareEstimate;
+
+      // Onda 5: settle payment — debit passenger, credit driver
+      if (ride.passengerId && updated.driverId) {
+        // Use fareBreakdown platformFeePercent if available, default to 10%
+        const platformFeePercent =
+          (ride as unknown as { fareBreakdown?: { platformFeePercent?: number } })
+            .fareBreakdown?.platformFeePercent ?? 10;
+        try {
+          settleRidePayment(
+            ride.id,
+            ride.passengerId,
+            updated.driverId as string,
+            updated.fareActual as number,
+            platformFeePercent,
+          );
+        } catch (e) {
+          // Log but don't fail the status update — wallet may not exist in stub
+          console.warn("[rides] payment settlement warning:", e);
+        }
+      }
     }
     if (nextStatus === "cancelled") updated.cancelledAt = now;
 
