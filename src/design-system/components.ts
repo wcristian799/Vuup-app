@@ -372,25 +372,25 @@
 
 export const componentInventory = [
   // Foundation (shadcn/ui + Radix)
-  { name: "Button",    path: "src/components/ui/button.tsx",   status: "implemented" },
-  { name: "Badge",     path: "src/components/ui/badge.tsx",    status: "pending" },
-  { name: "Card",      path: "src/components/ui/card.tsx",     status: "pending" },
-  { name: "Progress",  path: "src/components/ui/progress.tsx", status: "pending" },
-  { name: "Switch",    path: "src/components/ui/switch.tsx",   status: "pending" },
-  { name: "Tabs",      path: "src/components/ui/tabs.tsx",     status: "pending" },
-  { name: "Avatar",    path: "src/components/ui/avatar.tsx",   status: "pending" },
-  { name: "Dialog",    path: "src/components/ui/dialog.tsx",   status: "pending" },
-  { name: "Sheet",     path: "src/components/ui/sheet.tsx",    status: "pending" },
-  { name: "Sonner",    path: "src/components/ui/sonner.tsx",   status: "implemented" },
+  { name: "Button", path: "src/components/ui/button.tsx", status: "implemented" },
+  { name: "Badge", path: "src/components/ui/badge.tsx", status: "pending" },
+  { name: "Card", path: "src/components/ui/card.tsx", status: "pending" },
+  { name: "Progress", path: "src/components/ui/progress.tsx", status: "pending" },
+  { name: "Switch", path: "src/components/ui/switch.tsx", status: "pending" },
+  { name: "Tabs", path: "src/components/ui/tabs.tsx", status: "pending" },
+  { name: "Avatar", path: "src/components/ui/avatar.tsx", status: "pending" },
+  { name: "Dialog", path: "src/components/ui/dialog.tsx", status: "pending" },
+  { name: "Sheet", path: "src/components/ui/sheet.tsx", status: "pending" },
+  { name: "Sonner", path: "src/components/ui/sonner.tsx", status: "implemented" },
   // VUUP brand
   { name: "EarningsCounter", path: "src/components/vuup/EarningsCounter.tsx", status: "specced" },
-  { name: "VehicleMarker",   path: "src/components/vuup/VehicleMarker.tsx",   status: "specced" },
-  { name: "TripCard",        path: "src/components/vuup/TripCard.tsx",        status: "specced" },
-  { name: "PatronoCard",     path: "src/components/vuup/PatronoCard.tsx",     status: "specced" },
-  { name: "ShieldStatus",    path: "src/components/vuup/ShieldStatus.tsx",    status: "specced" },
-  { name: "ModeSliderCard",  path: "src/components/vuup/ModeSliderCard.tsx",  status: "specced" },
+  { name: "VehicleMarker", path: "src/components/vuup/VehicleMarker.tsx", status: "specced" },
+  { name: "TripCard", path: "src/components/vuup/TripCard.tsx", status: "specced" },
+  { name: "PatronoCard", path: "src/components/vuup/PatronoCard.tsx", status: "specced" },
+  { name: "ShieldStatus", path: "src/components/vuup/ShieldStatus.tsx", status: "specced" },
+  { name: "ModeSliderCard", path: "src/components/vuup/ModeSliderCard.tsx", status: "specced" },
   // Layout
-  { name: "AppShell",  path: "src/routes/__root.tsx (pattern)", status: "implemented" },
+  { name: "AppShell", path: "src/routes/__root.tsx (pattern)", status: "implemented" },
   { name: "StatusBar", path: "src/components/vuup/StatusBar.tsx", status: "specced" },
 ] as const;
 

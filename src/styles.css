@@ -124,3 +124,48 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Hide scrollbar for snap-scroll containers */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Float animation for community dots */
+@keyframes float {
+  0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
+  50%       { transform: translate(-50%, -50%) translateY(-6px); }
+}
+
+/* Tab active indicator */
+.tab-active-indicator {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background-color: var(--electric);
+  border-radius: 0 0 2px 2px;
+}
+
+/* VUUP card variants */
+.card-electric {
+  border-color: oklch(0.72 0.22 246 / 0.4);
+  box-shadow: 0 0 12px oklch(0.72 0.22 246 / 0.25);
+}
+.card-neon {
+  border-color: oklch(0.86 0.24 148 / 0.4);
+  box-shadow: 0 0 12px oklch(0.86 0.24 148 / 0.25);
+}
+.card-gold {
+  border-top: 2px solid oklch(0.84 0.16 88);
+  border-color: oklch(0.84 0.16 88 / 0.4);
+  box-shadow: 0 0 16px oklch(0.84 0.16 88 / 0.45);
+}
+.card-danger {
+  border-color: oklch(0.65 0.24 22 / 0.5);
+  box-shadow: 0 0 12px oklch(0.65 0.24 22 / 0.3);
+}
