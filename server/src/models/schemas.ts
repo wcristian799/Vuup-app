@@ -339,3 +339,100 @@ export const ApiErrorSchema = z.object({
   details: z.unknown().optional(),
 });
 export type ApiError = z.infer<typeof ApiErrorSchema>;
+
+// ─── Pricing ──────────────────────────────────────────────────────────────────
+
+/**
+ * Modalities and their pricing parameters.
+ *
+ * Pricing formula (BRL cents):
+ *   fare = baseCents + (distanceKm * perKmCents) + (durationMin * perMinCents)
+ *
+ * "motoboy" modality is for deliveries (faster, cheaper).
+ * "livre"   on-demand ride — standard pricing.
+ * "fixa"    fixed route ride — slight discount (shared-route benefit).
+ * "programada" scheduled ride — scheduling fee applied.
+ */
+export const ModalitySchema = z.enum(["livre", "fixa", "programada", "motoboy"]);
+export type Modality = z.infer<typeof ModalitySchema>;
+
+export const FareEstimateRequestSchema = z.object({
+  modality: ModalitySchema,
+  origin: LatLngSchema,
+  destination: LatLngSchema,
+  scheduledAt: TimestampSchema.optional(), // required when modality = "programada"
+  couponCode: z.string().optional(),
+});
+export type FareEstimateRequest = z.infer<typeof FareEstimateRequestSchema>;
+
+export const FareBreakdownSchema = z.object({
+  modality: ModalitySchema,
+  distanceKm: z.number().nonnegative(),
+  durationMin: z.number().int().nonnegative(),
+  baseCents: z.number().int().nonnegative(),
+  distanceCents: z.number().int().nonnegative(),
+  timeCents: z.number().int().nonnegative(),
+  schedulingFeeCents: z.number().int().nonnegative(),
+  surgeMultiplier: z.number().min(1),
+  couponDiscountCents: z.number().int().nonnegative(),
+  totalCents: z.number().int().nonnegative(),
+  platformFeePercent: z.number().min(0).max(100),
+  driverEarningsCents: z.number().int().nonnegative(),
+});
+export type FareBreakdown = z.infer<typeof FareBreakdownSchema>;
+
+// ─── Patron Driver / VIP Window ───────────────────────────────────────────────
+
+/**
+ * PatronLink: a named driver that a passenger has designated as their
+ * "Motorista Patrono". When this passenger requests a ride, the patron driver
+ * gets a 15-second exclusive VIP window before the ride is broadcast to all.
+ */
+export const PatronLinkSchema = z.object({
+  id: IdSchema,
+  passengerId: IdSchema,
+  driverId: IdSchema,
+  /** Friendly alias the passenger gave the driver (e.g. "Meu Motorista") */
+  label: z.string().min(1).max(60),
+  isActive: z.boolean(),
+  createdAt: TimestampSchema,
+  updatedAt: TimestampSchema,
+});
+export type PatronLink = z.infer<typeof PatronLinkSchema>;
+
+export const PatronLinkCreateSchema = z.object({
+  driverId: IdSchema,
+  label: z.string().min(1).max(60).default("Meu Motorista"),
+});
+export type PatronLinkCreate = z.infer<typeof PatronLinkCreateSchema>;
+
+/**
+ * VipWindowState: tracks the active VIP window for a ride.
+ * Created when a ride enters "searching" and a patron driver exists.
+ */
+export const VipWindowStateSchema = z.object({
+  rideId: IdSchema,
+  patronDriverId: IdSchema,
+  /** ISO timestamp when the 15-second window opens */
+  windowOpensAt: TimestampSchema,
+  /** ISO timestamp when the window expires (windowOpensAt + 15s) */
+  windowExpiresAt: TimestampSchema,
+  /** Whether the patron driver accepted within the window */
+  outcome: z.enum(["pending", "accepted", "expired"]),
+});
+export type VipWindowState = z.infer<typeof VipWindowStateSchema>;
+
+// ─── Extended RideRequest (adds modality + coupon) ───────────────────────────
+
+export const RideRequestV2Schema = RideRequestSchema.extend({
+  /** Modality defaults to routeType-mapped value; explicit override allowed */
+  modality: ModalitySchema.optional(),
+  couponCode: z.string().optional(),
+}).refine(
+  (v) => {
+    // scheduledAt is required for "programada" routeType
+    if (v.routeType === "programada" && !v.scheduledAt) return false;
+    return true;
+  },
+  { message: "scheduledAt is required for programada rides", path: ["scheduledAt"] },
+);

@@ -3,7 +3,17 @@
  * Replace with real DB calls when persistence is wired.
  */
 
-import type { User, Ride, Wallet, Transaction, CarpoolRoute, SafetyEvent } from "./schemas.js";
+import type {
+  User,
+  Ride,
+  Wallet,
+  Transaction,
+  CarpoolRoute,
+  SafetyEvent,
+  PatronLink,
+  VipWindowState,
+  Coupon,
+} from "./schemas.js";
 
 const NOW = new Date().toISOString();
 const YESTERDAY = new Date(Date.now() - 86_400_000).toISOString();
@@ -206,4 +216,86 @@ export function findWalletByUserId(userId: string): Wallet | undefined {
 
 export function findTransactionsByWalletId(walletId: string): Transaction[] {
   return MOCK_TRANSACTIONS.filter((t) => t.walletId === walletId);
+}
+
+// ─── Patron links (Motorista Patrono) ────────────────────────────────────────
+
+/** Ana (passenger 001) has Carlos (driver 002) as her patron driver */
+export const MOCK_PATRON_LINKS: PatronLink[] = [
+  {
+    id: "60000000-0000-0000-0000-000000000001",
+    passengerId: "00000000-0000-0000-0000-000000000001",
+    driverId: "00000000-0000-0000-0000-000000000002",
+    label: "Carlos — Motorista Fixo",
+    isActive: true,
+    createdAt: YESTERDAY,
+    updatedAt: NOW,
+  },
+];
+
+export function findPatronLinkByPassenger(
+  passengerId: string,
+): PatronLink | undefined {
+  return MOCK_PATRON_LINKS.find((l) => l.passengerId === passengerId && l.isActive);
+}
+
+export function findPatronLinksByDriver(driverId: string): PatronLink[] {
+  return MOCK_PATRON_LINKS.filter((l) => l.driverId === driverId && l.isActive);
+}
+
+// ─── VIP windows (active 15-second patron windows) ────────────────────────────
+
+export const MOCK_VIP_WINDOWS: VipWindowState[] = [];
+
+export function findVipWindowByRide(rideId: string): VipWindowState | undefined {
+  return MOCK_VIP_WINDOWS.find((w) => w.rideId === rideId);
+}
+
+export function createVipWindow(rideId: string, patronDriverId: string): VipWindowState {
+  const now = new Date();
+  const expires = new Date(now.getTime() + 15_000); // 15 seconds
+  const window: VipWindowState = {
+    rideId,
+    patronDriverId,
+    windowOpensAt: now.toISOString(),
+    windowExpiresAt: expires.toISOString(),
+    outcome: "pending",
+  };
+  MOCK_VIP_WINDOWS.push(window);
+  return window;
+}
+
+// ─── Coupons (sample data) ────────────────────────────────────────────────────
+
+export const MOCK_COUPONS: Coupon[] = [
+  {
+    id: "70000000-0000-0000-0000-000000000001",
+    code: "VUUP10",
+    campaignId: null,
+    discountType: "percent",
+    discountValue: 10,
+    maxUsages: 1000,
+    usagesCount: 0,
+    minFareCents: 500,
+    validFrom: YESTERDAY,
+    validUntil: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+    isActive: true,
+  },
+  {
+    id: "70000000-0000-0000-0000-000000000002",
+    code: "PRIMEIRAVIAGEM",
+    campaignId: null,
+    discountType: "fixed",
+    discountValue: 500, // R$5 off
+    maxUsages: null,
+    usagesCount: 0,
+    minFareCents: 800,
+    validFrom: YESTERDAY,
+    validUntil: new Date(Date.now() + 90 * 86_400_000).toISOString(),
+    isActive: true,
+  },
+];
+
+export function findCouponByCode(code: string): Coupon | undefined {
+  return MOCK_COUPONS.find((c) => c.code === code.toUpperCase());
 }

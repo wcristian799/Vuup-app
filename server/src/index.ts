@@ -20,6 +20,7 @@ import { ridesRouter } from "./routes/rides.js";
 import { walletRouter } from "./routes/wallet.js";
 import { safetyRouter } from "./routes/safety.js";
 import { carpoolRouter } from "./routes/carpool.js";
+import { patronRouter } from "./routes/patron.js";
 
 const app = new Hono();
 
@@ -60,6 +61,7 @@ app.route("/rides", ridesRouter); // /rides/*   — protected
 app.route("/wallet", walletRouter); // /wallet/*  — protected
 app.route("/safety", safetyRouter); // /safety/*  — protected
 app.route("/carpool", carpoolRouter); // /carpool/* — protected
+app.route("/patron", patronRouter); // /patron/*  — protected
 
 // ─── 404 catch-all ───────────────────────────────────────────────────────────
 
@@ -89,11 +91,18 @@ serve({ fetch: app.fetch, port: PORT }, () => {
   console.log("  POST /auth/login");
   console.log("  POST /auth/refresh");
   console.log("  GET  /users/me");
+  console.log("  POST /rides/fare-estimate");
   console.log("  POST /rides");
   console.log("  GET  /rides");
   console.log("  GET  /rides/:id");
   console.log("  PATCH /rides/:id/status");
+  console.log("  PATCH /rides/:id/cancel");
   console.log("  GET  /rides/nearby-drivers");
+  console.log("  GET  /patron");
+  console.log("  POST /patron");
+  console.log("  PATCH /patron/:id");
+  console.log("  DELETE /patron/:id");
+  console.log("  GET  /patron/passengers");
   console.log("  GET  /wallet");
   console.log("  GET  /wallet/transactions");
   console.log("  GET  /safety/events");

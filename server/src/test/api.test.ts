@@ -123,8 +123,9 @@ describe("Authenticated flows", () => {
     });
     expect(res.status).toBe(201);
     const body = await json(res);
-    expect(body.status).toBe("searching");
-    expect(body.fareEstimate).toBeGreaterThan(0);
+    // POST /rides now returns { ride, fareBreakdown, vipWindow }
+    expect(body.ride.status).toBe("searching");
+    expect(body.ride.fareEstimate).toBeGreaterThan(0);
   });
 
   it("GET /wallet returns balance", async () => {
