@@ -1,7 +1,7 @@
 /**
- * Carpool routes (protected)
+ * Carpool routes (protected) — backed by SQLite.
  *
- * GET  /carpool/routes          — list active carpool routes near a location
+ * GET  /carpool/routes          — list active carpool routes
  * GET  /carpool/routes/:id      — single route detail
  * POST /carpool/routes          — driver creates a new route
  * POST /carpool/routes/:id/join — passenger joins a carpool seat
@@ -10,9 +10,15 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
+import { HTTPException } from "hono/http-exception";
 import { requireAuth } from "../middleware/auth.js";
-import { CarpoolRouteSchema, RouteTypeSchema, LatLngSchema } from "../models/schemas.js";
-import { MOCK_CARPOOL_ROUTES } from "../models/mock-data.js";
+import { RouteTypeSchema, LatLngSchema } from "../models/schemas.js";
+import {
+  listCarpoolRoutes,
+  findCarpoolRouteById,
+  createCarpoolRoute,
+  joinCarpoolRoute,
+} from "../db/repos/safety-carpool.js";
 
 export const carpoolRouter = new Hono();
 
@@ -20,16 +26,16 @@ carpoolRouter.use("/*", requireAuth);
 
 // GET /carpool/routes
 carpoolRouter.get("/routes", (c) => {
-  const active = MOCK_CARPOOL_ROUTES.filter((r) => r.isActive);
+  const routes = listCarpoolRoutes(true);
   return c.json({
-    data: active,
-    pagination: { page: 1, limit: 20, total: active.length, hasNext: false },
+    data: routes,
+    pagination: { page: 1, limit: 50, total: routes.length, hasNext: false },
   });
 });
 
 // GET /carpool/routes/:id
 carpoolRouter.get("/routes/:id", (c) => {
-  const route = MOCK_CARPOOL_ROUTES.find((r) => r.id === c.req.param("id"));
+  const route = findCarpoolRouteById(c.req.param("id"));
   if (!route) {
     return c.json({ code: "NOT_FOUND", message: "Carpool route not found" }, 404);
   }
@@ -53,33 +59,34 @@ carpoolRouter.post(
   ),
   (c) => {
     const userId = c.get("userId");
+    const userRole = c.get("userRole");
     const body = c.req.valid("json");
-    const now = new Date().toISOString();
-    const route = CarpoolRouteSchema.parse({
-      id: crypto.randomUUID(),
+
+    if (userRole !== "driver" && userRole !== "motoboy" && userRole !== "admin") {
+      throw new HTTPException(403, { message: "Only drivers can create carpool routes" });
+    }
+
+    const route = createCarpoolRoute({
       driverId: userId,
-      ...body,
+      name: body.name,
+      routeType: body.routeType,
+      stops: body.stops,
+      maxPassengers: body.maxPassengers,
+      farePerSeat: body.farePerSeat,
       departureTime: body.departureTime ?? null,
       scheduledAt: body.scheduledAt ?? null,
-      currentPassengers: 0,
-      isActive: true,
-      createdAt: now,
     });
-    MOCK_CARPOOL_ROUTES.push(route);
     return c.json(route, 201);
   },
 );
 
 // POST /carpool/routes/:id/join
 carpoolRouter.post("/routes/:id/join", (c) => {
-  const idx = MOCK_CARPOOL_ROUTES.findIndex((r) => r.id === c.req.param("id"));
-  if (idx === -1) {
-    return c.json({ code: "NOT_FOUND", message: "Route not found" }, 404);
-  }
-  const route = MOCK_CARPOOL_ROUTES[idx]!;
-  if (route.currentPassengers >= route.maxPassengers) {
+  const updated = joinCarpoolRoute(c.req.param("id"));
+  if (updated === undefined) {
+    const existing = findCarpoolRouteById(c.req.param("id"));
+    if (!existing) return c.json({ code: "NOT_FOUND", message: "Route not found" }, 404);
     return c.json({ code: "FULL", message: "No seats available" }, 409);
   }
-  MOCK_CARPOOL_ROUTES[idx] = { ...route, currentPassengers: route.currentPassengers + 1 };
-  return c.json(MOCK_CARPOOL_ROUTES[idx]);
+  return c.json(updated);
 });

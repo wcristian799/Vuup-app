@@ -1,5 +1,5 @@
 /**
- * Rides routes (all protected)
+ * Rides routes (all protected) — backed by SQLite.
  *
  * POST   /rides/fare-estimate        — price quote before requesting
  * GET    /rides/nearby-drivers       — nearest available drivers
@@ -17,26 +17,27 @@ import { HTTPException } from "hono/http-exception";
 
 import { requireAuth } from "../middleware/auth.js";
 import { RideRequestV2Schema, FareEstimateRequestSchema } from "../models/schemas.js";
-import {
-  MOCK_RIDES,
-  MOCK_USERS,
-  findPatronLinkByPassenger,
-  findVipWindowByRide,
-  createVipWindow,
-  MOCK_VIP_WINDOWS,
-  findCouponByCode,
-} from "../models/mock-data.js";
 import { calculateFare } from "../lib/pricing.js";
 import type { Modality } from "../models/schemas.js";
+import { listUsersByRole } from "../db/repos/users.js";
+import {
+  findRideById,
+  listRidesByPassenger,
+  listRidesByDriver,
+  countRidesByPassenger,
+  countRidesByDriver,
+  createRide,
+  updateRideStatus,
+  findVipWindowByRide,
+  createVipWindow,
+  settleVipWindow,
+  findPatronLinkByPassenger,
+} from "../db/repos/rides.js";
+import { findCouponByCode, redeemCoupon } from "../db/repos/campaigns.js";
+import { findWalletByUserId, addTransaction } from "../db/repos/wallet.js";
+import { incrementTotalRides } from "../db/repos/users.js";
 
-// ─── State machine: allowed transitions ──────────────────────────────────────
-//
-// searching       -> accepted | cancelled
-// accepted        -> driver_en_route | cancelled
-// driver_en_route -> in_progress | cancelled
-// in_progress     -> completed | cancelled
-// completed       -> (terminal)
-// cancelled       -> (terminal)
+// ─── State machine ────────────────────────────────────────────────────────────
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   searching: ["accepted", "cancelled"],
@@ -53,33 +54,30 @@ ridesRouter.use("/*", requireAuth);
 
 // ─── POST /rides/fare-estimate ────────────────────────────────────────────────
 
-ridesRouter.post(
-  "/fare-estimate",
-  zValidator("json", FareEstimateRequestSchema),
-  (c) => {
-    const body = c.req.valid("json");
-    const coupon = body.couponCode ? findCouponByCode(body.couponCode) : undefined;
+ridesRouter.post("/fare-estimate", zValidator("json", FareEstimateRequestSchema), (c) => {
+  const body = c.req.valid("json");
+  const coupon = body.couponCode ? findCouponByCode(body.couponCode) : undefined;
 
-    if (body.couponCode && !coupon) {
-      return c.json({ code: "INVALID_COUPON", message: "Coupon not found or expired" }, 400);
-    }
+  if (body.couponCode && !coupon) {
+    return c.json({ code: "INVALID_COUPON", message: "Coupon not found or expired" }, 400);
+  }
 
-    const breakdown = calculateFare({
-      modality: body.modality,
-      origin: body.origin,
-      destination: body.destination,
-      coupon,
-    });
+  const breakdown = calculateFare({
+    modality: body.modality,
+    origin: body.origin,
+    destination: body.destination,
+    coupon: coupon ?? undefined,
+  });
 
-    return c.json({ fareBreakdown: breakdown });
-  },
-);
+  return c.json({ fareBreakdown: breakdown });
+});
 
 // ─── GET /rides/nearby-drivers ────────────────────────────────────────────────
 
 ridesRouter.get("/nearby-drivers", (c) => {
-  const drivers = MOCK_USERS.filter((u) => u.role === "driver" && u.status === "active").map(
-    (u) => ({
+  const drivers = listUsersByRole("driver")
+    .filter((u) => u.status === "active")
+    .map((u) => ({
       id: u.id,
       fullName: u.fullName,
       rating: u.rating,
@@ -88,8 +86,7 @@ ridesRouter.get("/nearby-drivers", (c) => {
         lng: -46.63 + (Math.random() - 0.5) * 0.05,
       },
       estimatedArrivalMin: Math.floor(Math.random() * 8) + 2,
-    }),
-  );
+    }));
   return c.json({ drivers });
 });
 
@@ -115,47 +112,33 @@ ridesRouter.post("/", zValidator("json", RideRequestV2Schema), (c) => {
     modality,
     origin: body.origin,
     destination: body.destination,
-    coupon,
+    coupon: coupon ?? undefined,
   });
 
-  const now = new Date().toISOString();
-  const rideId = crypto.randomUUID();
-
-  const newRide = {
-    id: rideId,
+  const ride = createRide({
     passengerId: userId,
-    driverId: null as string | null,
     routeType: body.routeType,
-    status: "searching" as const,
     origin: body.origin,
     destination: body.destination,
     estimatedDistanceKm: fareBreakdown.distanceKm,
     estimatedDurationMin: fareBreakdown.durationMin,
     fareEstimate: fareBreakdown.totalCents,
-    fareActual: null as number | null,
+    couponCode: body.couponCode ?? null,
+    couponDiscountCents: fareBreakdown.couponDiscountCents,
     scheduledAt: body.scheduledAt ?? null,
-    startedAt: null as string | null,
-    completedAt: null as string | null,
-    cancelledAt: null as string | null,
-    cancellationReason: null as string | null,
     fareBreakdown,
-    createdAt: now,
-    updatedAt: now,
-  };
+  });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  MOCK_RIDES.push(newRide as any);
-
-  // VIP window: if passenger has a patron driver, reserve 15 seconds.
+  // VIP window: if passenger has a patron driver, open 15-second window
   const patronLink = findPatronLinkByPassenger(userId);
   let vipWindow = null;
   if (patronLink) {
-    vipWindow = createVipWindow(rideId, patronLink.driverId);
+    vipWindow = createVipWindow(ride.id, patronLink.driverId);
   }
 
   return c.json(
     {
-      ride: newRide,
+      ride,
       fareBreakdown,
       vipWindow: vipWindow
         ? {
@@ -175,22 +158,26 @@ ridesRouter.post("/", zValidator("json", RideRequestV2Schema), (c) => {
 ridesRouter.get("/", (c) => {
   const userId = c.get("userId");
   const userRole = c.get("userRole");
+  const page = Math.max(1, Number(c.req.query("page") ?? 1));
+  const limit = Math.min(50, Math.max(1, Number(c.req.query("limit") ?? 20)));
+  const offset = (page - 1) * limit;
 
-  const rides =
-    userRole === "driver" || userRole === "motoboy"
-      ? MOCK_RIDES.filter((r) => r.driverId === userId)
-      : MOCK_RIDES.filter((r) => r.passengerId === userId);
+  const isDriver = userRole === "driver" || userRole === "motoboy";
+  const rides = isDriver
+    ? listRidesByDriver(userId, limit, offset)
+    : listRidesByPassenger(userId, limit, offset);
+  const total = isDriver ? countRidesByDriver(userId) : countRidesByPassenger(userId);
 
   return c.json({
     data: rides,
-    pagination: { page: 1, limit: 20, total: rides.length, hasNext: false },
+    pagination: { page, limit, total, hasNext: offset + limit < total },
   });
 });
 
 // ─── GET /rides/:id ───────────────────────────────────────────────────────────
 
 ridesRouter.get("/:id", (c) => {
-  const ride = MOCK_RIDES.find((r) => r.id === c.req.param("id"));
+  const ride = findRideById(c.req.param("id"));
   if (!ride) {
     return c.json({ code: "NOT_FOUND", message: "Ride not found" }, 404);
   }
@@ -214,21 +201,13 @@ ridesRouter.get("/:id", (c) => {
 
 ridesRouter.patch(
   "/:id/cancel",
-  zValidator(
-    "json",
-    z.object({
-      reason: z.string().max(200).optional(),
-    }),
-  ),
+  zValidator("json", z.object({ reason: z.string().max(200).optional() })),
   (c) => {
     const userId = c.get("userId");
     const userRole = c.get("userRole");
-    const idx = MOCK_RIDES.findIndex((r) => r.id === c.req.param("id"));
-    if (idx === -1) {
-      return c.json({ code: "NOT_FOUND", message: "Ride not found" }, 404);
-    }
+    const ride = findRideById(c.req.param("id"));
 
-    const ride = MOCK_RIDES[idx]!;
+    if (!ride) return c.json({ code: "NOT_FOUND", message: "Ride not found" }, 404);
 
     if (ride.passengerId !== userId && userRole !== "admin") {
       throw new HTTPException(403, { message: "Only the ride passenger can cancel" });
@@ -246,21 +225,16 @@ ridesRouter.patch(
 
     const { reason } = c.req.valid("json");
     const now = new Date().toISOString();
-    const updated = {
-      ...ride,
-      status: "cancelled" as const,
+    const updated = updateRideStatus(ride.id, {
+      status: "cancelled",
       cancelledAt: now,
       cancellationReason: reason ?? null,
-      updatedAt: now,
-    };
+    });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    MOCK_RIDES[idx] = updated as any;
-
-    // Expire any pending VIP window.
-    const winIdx = MOCK_VIP_WINDOWS.findIndex((w) => w.rideId === ride.id);
-    if (winIdx !== -1 && MOCK_VIP_WINDOWS[winIdx]!.outcome === "pending") {
-      MOCK_VIP_WINDOWS[winIdx] = { ...MOCK_VIP_WINDOWS[winIdx]!, outcome: "expired" };
+    // Expire any pending VIP window
+    const vipWin = findVipWindowByRide(ride.id);
+    if (vipWin && vipWin.outcome === "pending") {
+      settleVipWindow(ride.id, "expired");
     }
 
     return c.json(updated);
@@ -280,16 +254,13 @@ ridesRouter.patch(
   (c) => {
     const userId = c.get("userId");
     const userRole = c.get("userRole");
-    const idx = MOCK_RIDES.findIndex((r) => r.id === c.req.param("id"));
-    if (idx === -1) {
-      return c.json({ code: "NOT_FOUND", message: "Ride not found" }, 404);
-    }
+    const ride = findRideById(c.req.param("id"));
 
-    const ride = MOCK_RIDES[idx]!;
+    if (!ride) return c.json({ code: "NOT_FOUND", message: "Ride not found" }, 404);
+
     const { status: nextStatus } = c.req.valid("json");
-
-    // Validate state machine transition.
     const allowed = VALID_TRANSITIONS[ride.status] ?? [];
+
     if (!allowed.includes(nextStatus)) {
       return c.json(
         {
@@ -301,7 +272,7 @@ ridesRouter.patch(
       );
     }
 
-    // VIP window check: a non-patron driver cannot accept during the window.
+    // VIP window check: non-patron driver cannot accept during window
     if (nextStatus === "accepted" && (userRole === "driver" || userRole === "motoboy")) {
       const vipWin = findVipWindowByRide(ride.id);
       if (vipWin && vipWin.outcome === "pending") {
@@ -317,30 +288,60 @@ ridesRouter.patch(
             409,
           );
         }
-        // Settle the window outcome.
-        const winIdx = MOCK_VIP_WINDOWS.findIndex((w) => w.rideId === ride.id);
-        if (winIdx !== -1) {
-          MOCK_VIP_WINDOWS[winIdx] = {
-            ...MOCK_VIP_WINDOWS[winIdx]!,
-            outcome: windowStillOpen ? "accepted" : "expired",
-          };
-        }
+        settleVipWindow(ride.id, windowStillOpen ? "accepted" : "expired");
       }
     }
 
     const now = new Date().toISOString();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updated: any = { ...ride, status: nextStatus, updatedAt: now };
+    const updates: Parameters<typeof updateRideStatus>[1] = { status: nextStatus };
 
-    if (nextStatus === "accepted") updated.driverId = userId;
-    if (nextStatus === "in_progress") updated.startedAt = now;
+    if (nextStatus === "accepted") updates.driverId = userId;
+    if (nextStatus === "in_progress") updates.startedAt = now;
     if (nextStatus === "completed") {
-      updated.completedAt = now;
-      updated.fareActual = ride.fareEstimate;
+      updates.completedAt = now;
+      updates.fareActual = ride.fareEstimate;
     }
-    if (nextStatus === "cancelled") updated.cancelledAt = now;
+    if (nextStatus === "cancelled") updates.cancelledAt = now;
 
-    MOCK_RIDES[idx] = updated;
+    const updated = updateRideStatus(ride.id, updates);
+
+    // Post-completion: settle earnings (best-effort — missing wallets are skipped)
+    if (nextStatus === "completed" && updated) {
+      const driverId = updated.driverId;
+      const fareBreakdown = updated.fareBreakdown;
+      try {
+        if (driverId && fareBreakdown) {
+          const driverWallet = findWalletByUserId(driverId);
+          if (driverWallet) {
+            addTransaction({
+              walletId: driverWallet.id,
+              type: "ride_earning",
+              amountCents: fareBreakdown.driverEarningsCents,
+              referenceId: ride.id,
+              description: `Corrida #${ride.id.slice(0, 8)} — tarifa R$${(updated.fareActual! / 100).toFixed(2)}`,
+              isEarning: true,
+            });
+          }
+          incrementTotalRides(driverId);
+        }
+        const passengerWallet = findWalletByUserId(ride.passengerId);
+        if (passengerWallet) {
+          addTransaction({
+            walletId: passengerWallet.id,
+            type: "ride_payment",
+            amountCents: -(updated.fareActual ?? ride.fareEstimate),
+            referenceId: ride.id,
+            description: `Pagamento corrida #${ride.id.slice(0, 8)}`,
+          });
+        }
+        incrementTotalRides(ride.passengerId);
+        if (ride.couponCode) {
+          redeemCoupon(ride.couponCode);
+        }
+      } catch (err) {
+        console.error("[rides] post-completion settlement error (non-fatal):", err);
+      }
+    }
 
     return c.json(updated);
   },
