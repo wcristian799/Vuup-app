@@ -1,6 +1,6 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Zap } from "lucide-react";
 
 // Foundation components
 import { Button } from "@/components/ui/button";
@@ -96,7 +96,29 @@ function GalleryPage() {
           <h1 className="font-display text-xl font-bold text-foreground">Galeria de Componentes</h1>
         </div>
 
-        {/* ── Design Tokens ── */}
+        {/* ── WOW Interactions CTA ── */}
+        <Section title="WOW Interactions">
+          <div className="px-4">
+            <Link
+              to="/wow"
+              className="flex items-center gap-3 rounded-2xl border border-electric/40 bg-electric/8 p-4 hover:bg-electric/12 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Ver demonstração completa das WOW Interactions"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-electric/15 shrink-0">
+                <Zap size={20} className="text-electric" aria-hidden="true" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-electric">Abrir WOW Gallery</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Mapa Vivo · Matrix Slider · Escudo/Enxame · Supermarket · Patrono
+                </p>
+              </div>
+              <span className="text-muted-foreground group-hover:text-electric transition-colors text-lg">
+                →
+              </span>
+            </Link>
+          </div>
+        </Section>
         <Section title="Tokens de cor">
           <div className="grid grid-cols-4 gap-2 px-4">
             {[
