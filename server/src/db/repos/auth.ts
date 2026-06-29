@@ -20,6 +20,11 @@ export function createOtp(phone: string, code: string, ttlSeconds = 300): string
   return id;
 }
 
+/**
+ * Strict OTP verification: the code must match a stored, unused, unexpired OTP
+ * for this phone. On success the OTP is consumed (single-use). Used in
+ * production and any environment without the AUTH_DEV_OTP dev shortcut.
+ */
 export function verifyAndConsumeOtp(phone: string, code: string): boolean {
   const now = new Date().toISOString();
   const row = db
@@ -34,12 +39,7 @@ export function verifyAndConsumeOtp(phone: string, code: string): boolean {
 
   if (!row) return false;
 
-  // In production: strict OTP check. In dev (ENV=development), accept any 6-digit code.
-  if (process.env["NODE_ENV"] !== "production") {
-    db.prepare("UPDATE otp_codes SET used = 1 WHERE id = ?").run(row.id);
-    return true;
-  }
-
+  // Single-use: consume the matched OTP so it cannot be replayed.
   db.prepare("UPDATE otp_codes SET used = 1 WHERE id = ?").run(row.id);
   return true;
 }
