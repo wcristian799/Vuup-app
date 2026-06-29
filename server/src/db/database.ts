@@ -44,16 +44,8 @@ db.exec(`
     updated_at      TEXT NOT NULL
   );
 
-  CREATE TABLE IF NOT EXISTS otp_codes (
-    id          TEXT PRIMARY KEY,
-    phone       TEXT NOT NULL,
-    code        TEXT NOT NULL,
-    expires_at  TEXT NOT NULL,
-    used        INTEGER NOT NULL DEFAULT 0,
-    created_at  TEXT NOT NULL
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_otp_phone ON otp_codes(phone);
+  -- otp_codes table removed (VUU-82: OTP auth dropped). Registration is
+  -- phone-first at ride time; no per-phone codes are stored.
 
   CREATE TABLE IF NOT EXISTS refresh_tokens (
     token      TEXT PRIMARY KEY,

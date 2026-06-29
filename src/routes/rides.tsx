@@ -1,6 +1,5 @@
 import * as React from "react";
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { isAuthenticated } from "@/lib/auth";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Layers, MapPin, Clock, CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-react";
 import { apiClient } from "@/api/client";
@@ -10,9 +9,7 @@ import type { Ride } from "@/api/types";
 
 export const Route = createFileRoute("/rides")({
   component: RidesPage,
-  beforeLoad: () => {
-    if (!isAuthenticated()) throw redirect({ to: "/login" });
-  },
+  // No auth guard (VUU-82): freely navigable.
 });
 
 function formatBRL(value: number): string {

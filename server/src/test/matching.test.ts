@@ -34,10 +34,10 @@ async function json(res: Response): Promise<any> {
 }
 
 async function getToken(phone: string): Promise<string> {
-  const res = await app.request("/auth/login", {
+  const res = await app.request("/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone, otpCode: "123456" }),
+    body: JSON.stringify({ phone }),
   });
   const body = await json(res);
   if (!body.accessToken) {
@@ -50,7 +50,7 @@ async function getToken(phone: string): Promise<string> {
  * Ensure a user exists in the DB with `role: "driver"`.
  * If the user already exists (e.g., auto-created as passenger by a prior login),
  * we force-update their role to "driver" via raw SQL.
- * Needed because auth/login auto-creates users with `role: "passenger"`.
+ * Needed because auth/register auto-creates users with `role: "passenger"`.
  */
 function ensureDriverUser(phone: string, fullName: string): void {
   const existing = findUserByPhone(phone);

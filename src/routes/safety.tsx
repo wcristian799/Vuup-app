@@ -1,6 +1,5 @@
 import * as React from "react";
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { isAuthenticated } from "@/lib/auth";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ShieldCheck, Loader2, AlertCircle } from "lucide-react";
 import { apiClient } from "@/api/client";
@@ -10,9 +9,7 @@ import type { SafetyEvent } from "@/api/types";
 
 export const Route = createFileRoute("/safety")({
   component: SafetyPage,
-  beforeLoad: () => {
-    if (!isAuthenticated()) throw redirect({ to: "/login" });
-  },
+  // No auth guard (VUU-82): freely navigable.
 });
 
 const EVENT_TYPE_LABELS: Record<string, string> = {

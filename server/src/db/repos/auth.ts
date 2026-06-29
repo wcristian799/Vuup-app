@@ -1,66 +1,8 @@
 /**
- * Auth repository — OTP codes and refresh token storage.
+ * Auth repository — refresh token storage. OTP storage removed (VUU-82).
  */
 
-import { randomUUID } from "node:crypto";
 import db from "../database.js";
-
-// ─── OTP codes ────────────────────────────────────────────────────────────────
-
-export function createOtp(phone: string, code: string, ttlSeconds = 300): string {
-  const id = randomUUID();
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + ttlSeconds * 1000).toISOString();
-  db.prepare(
-    `
-    INSERT INTO otp_codes (id, phone, code, expires_at, used, created_at)
-    VALUES (?, ?, ?, ?, 0, ?)
-  `,
-  ).run(id, phone, code, expiresAt, now.toISOString());
-  return id;
-}
-
-/**
- * Strict OTP verification: the code must match a stored, unused, unexpired OTP
- * for this phone. On success the OTP is consumed (single-use). Used in
- * production and any environment without the AUTH_DEV_OTP dev shortcut.
- */
-export function verifyAndConsumeOtp(phone: string, code: string): boolean {
-  const now = new Date().toISOString();
-  const row = db
-    .prepare(
-      `
-    SELECT id FROM otp_codes
-    WHERE phone = ? AND code = ? AND used = 0 AND expires_at > ?
-    ORDER BY created_at DESC LIMIT 1
-  `,
-    )
-    .get(phone, code, now) as { id: string } | undefined;
-
-  if (!row) return false;
-
-  // Single-use: consume the matched OTP so it cannot be replayed.
-  db.prepare("UPDATE otp_codes SET used = 1 WHERE id = ?").run(row.id);
-  return true;
-}
-
-/**
- * Dev-mode: always accepts any 6-digit code (mirrors mock behavior).
- * In production: use verifyAndConsumeOtp with real SMS delivery.
- */
-export function verifyOtpDev(phone: string, code: string): boolean {
-  if (code.length !== 6 || !/^\d{6}$/.test(code)) return false;
-  // Create a consumed OTP record for audit trail
-  const id = randomUUID();
-  const now = new Date().toISOString();
-  db.prepare(
-    `
-    INSERT INTO otp_codes (id, phone, code, expires_at, used, created_at)
-    VALUES (?, ?, ?, ?, 1, ?)
-  `,
-  ).run(id, phone, code, now, now);
-  return true;
-}
 
 // ─── Refresh tokens ───────────────────────────────────────────────────────────
 

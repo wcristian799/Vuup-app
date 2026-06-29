@@ -68,10 +68,10 @@ async function getToken(phone: string, role: UserRole = "driver"): Promise<strin
   // Force-update role in case it was already inserted with a different role
   db.prepare("UPDATE users SET role = ?, updated_at = ? WHERE phone = ?").run(role, now, phone);
 
-  const res = await app.request("/auth/login", {
+  const res = await app.request("/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone, otpCode: "123456" }),
+    body: JSON.stringify({ phone }),
   });
   const body = await json(res);
   if (!body.accessToken) throw new Error(`getToken failed for ${phone}: ${JSON.stringify(body)}`);

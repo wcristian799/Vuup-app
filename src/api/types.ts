@@ -59,12 +59,12 @@ export interface User extends UserPublic {
   updatedAt: string;
 }
 
-export interface LoginRequest {
+export interface RegisterRequest {
   phone: string;
-  otpCode: string;
+  fullName?: string;
 }
 
-export interface LoginResponse {
+export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;

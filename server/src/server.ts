@@ -13,7 +13,7 @@ serve({ fetch: app.fetch, port: PORT }, () => {
   console.log("Mode: PERSISTENT (SQLite via better-sqlite3)");
   console.log("Routes:");
   console.log("  GET  /health");
-  console.log("  POST /auth/otp-request  POST /auth/login  POST /auth/refresh  POST /auth/logout");
+  console.log("  POST /auth/register  POST /auth/refresh  POST /auth/logout");
   console.log("  GET|PATCH /users/me");
   console.log("  POST /rides/fare-estimate  POST /rides  GET /rides  GET|PATCH /rides/:id/...");
   console.log("  GET /wallet  GET /wallet/transactions  POST /wallet/transfer");

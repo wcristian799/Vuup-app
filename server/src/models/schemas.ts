@@ -65,19 +65,22 @@ export type UserPublic = z.infer<typeof UserPublicSchema>;
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
-export const LoginRequestSchema = z.object({
-  phone: z.string(),
-  otpCode: z.string().length(6),
+// Registration / session — OTP removed (founder decision 2026-06-29). The user
+// registers (or re-authenticates an existing phone) at the moment of requesting
+// a ride. Name is optional so the quick-register modal can submit phone-only.
+export const RegisterRequestSchema = z.object({
+  phone: z.string().min(8).max(20),
+  fullName: z.string().min(1).max(120).optional(),
 });
-export type LoginRequest = z.infer<typeof LoginRequestSchema>;
+export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 
-export const LoginResponseSchema = z.object({
+export const AuthResponseSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),
   expiresIn: z.number(), // seconds
   user: UserPublicSchema,
 });
-export type LoginResponse = z.infer<typeof LoginResponseSchema>;
+export type AuthResponse = z.infer<typeof AuthResponseSchema>;
 
 export const RefreshRequestSchema = z.object({
   refreshToken: z.string(),

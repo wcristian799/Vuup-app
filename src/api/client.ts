@@ -7,8 +7,8 @@
  */
 
 import type {
-  LoginRequest,
-  LoginResponse,
+  RegisterRequest,
+  AuthResponse,
   Ride,
   RideRequest,
   Wallet,
@@ -67,14 +67,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const apiClient = {
   auth: {
-    requestOtp: (phone: string) =>
-      request<{ message: string; expiresIn: number }>("/auth/otp-request", {
-        method: "POST",
-        body: JSON.stringify({ phone }),
-      }),
-
-    login: (data: LoginRequest) =>
-      request<LoginResponse>("/auth/login", {
+    // OTP removed (VUU-82). Register (or re-auth an existing phone) at ride time.
+    register: (data: RegisterRequest) =>
+      request<AuthResponse>("/auth/register", {
         method: "POST",
         body: JSON.stringify(data),
       }),

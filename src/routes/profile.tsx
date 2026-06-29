@@ -1,6 +1,5 @@
 import * as React from "react";
-import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
-import { isAuthenticated } from "@/lib/auth";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, User, LogOut, Loader2, AlertCircle, Shield } from "lucide-react";
 import { toast } from "sonner";
@@ -13,9 +12,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profile")({
   component: ProfilePage,
-  beforeLoad: () => {
-    if (!isAuthenticated()) throw redirect({ to: "/login" });
-  },
+  // No auth guard (VUU-82): freely navigable; content reflects session state.
 });
 
 function ProfilePage() {
@@ -41,7 +38,7 @@ function ProfilePage() {
     } finally {
       clearAuth();
       toast.info("Você saiu da sua conta");
-      await navigate({ to: "/login" });
+      await navigate({ to: "/" });
     }
   }
 

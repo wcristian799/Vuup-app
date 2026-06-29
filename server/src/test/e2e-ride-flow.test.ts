@@ -134,10 +134,10 @@ async function json(res: Response): Promise<Record<string, unknown>> {
 }
 
 async function getToken(phone: string): Promise<string> {
-  const res = await app.request("/auth/login", {
+  const res = await app.request("/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone, otpCode: "123456" }),
+    body: JSON.stringify({ phone }),
   });
   const body = await json(res);
   if (!body.accessToken) {

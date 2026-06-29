@@ -1,8 +1,9 @@
 import * as React from "react";
-import { createFileRoute, redirect, Link, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouterState } from "@tanstack/react-router";
 import { Map as MapIcon, Layers, ShieldAlert, User, Wallet } from "lucide-react";
 import { StatusBar } from "@/components/vuup/StatusBar";
 import { MapaVivo, type SelectedDestination } from "@/components/vuup/MapaVivo";
+import { QuickRegisterDialog } from "@/components/vuup/QuickRegisterDialog";
 import { isAuthenticated } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { useRideDispute } from "@/hooks/use-ride-dispute";
@@ -10,12 +11,8 @@ import { apiClient } from "@/api/client";
 
 export const Route = createFileRoute("/")({
   component: VuupPassengerApp,
-  beforeLoad: () => {
-    // Guard: redirect to /login if not authenticated
-    if (!isAuthenticated()) {
-      throw redirect({ to: "/login" });
-    }
-  },
+  // No auth guard (VUU-82): the app is freely navigable. Registration happens
+  // on-demand, at the moment of requesting a ride.
 });
 
 // Bottom nav items — each links to a real route
@@ -35,17 +32,18 @@ function VuupPassengerApp() {
     null,
   );
 
+  // Quick-register modal state (VUU-82) — opened when an unauthenticated user
+  // tries to request a ride.
+  const [registerOpen, setRegisterOpen] = React.useState(false);
+
   // Dispute / realtime ride state
   const { status: disputeStatus, startDispute, endDispute, bids, winnerId } = useRideDispute();
 
   /**
-   * Called when the user taps "Ir para X" in the bottom panel.
-   * Creates a ride via the API then opens the SSE dispute stream.
+   * Create the ride via the API and open the SSE dispute stream. Assumes a
+   * session already exists (apiClient sends the bearer token).
    */
-  async function handleSelectRide(destination: SelectedDestination | null) {
-    if (!destination) return;
-    setPendingDestination(destination);
-
+  async function createRideAndDispute(destination: SelectedDestination) {
     try {
       // Use user position as a rough origin placeholder — reverse-geocoding of
       // the actual GPS position is a follow-up (VUU-68).
@@ -68,6 +66,29 @@ function VuupPassengerApp() {
       console.warn("[VuupPassengerApp] Could not create ride:", err);
       // Still allow the user to see the map — stream will be started once
       // connectivity is restored (the user can retry by tapping the button again).
+    }
+  }
+
+  /**
+   * Called when the user taps "Ir para X" in the bottom panel. If there is no
+   * session yet, open the quick-register modal first (VUU-82); otherwise create
+   * the ride immediately.
+   */
+  async function handleSelectRide(destination: SelectedDestination | null) {
+    if (!destination) return;
+    setPendingDestination(destination);
+
+    if (!isAuthenticated()) {
+      setRegisterOpen(true);
+      return;
+    }
+    await createRideAndDispute(destination);
+  }
+
+  /** After a successful quick-register, continue the ride the user asked for. */
+  function handleRegistered() {
+    if (pendingDestination) {
+      void createRideAndDispute(pendingDestination);
     }
   }
 
@@ -98,6 +119,13 @@ function VuupPassengerApp() {
           <MapaVivo onSelectRide={handleSelectRide} />
         </div>
       </div>
+
+      {/* Quick-register modal — opens when an anonymous user requests a ride */}
+      <QuickRegisterDialog
+        open={registerOpen}
+        onOpenChange={setRegisterOpen}
+        onRegistered={handleRegistered}
+      />
 
       {/* Realtime dispute status banner — shown while searching or matching */}
       {disputeStatus !== "idle" && disputeStatus !== "resolved" && (

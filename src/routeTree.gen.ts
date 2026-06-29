@@ -14,7 +14,6 @@ import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as SafetyRouteImport } from './routes/safety'
 import { Route as RidesRouteImport } from './routes/rides'
 import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -43,11 +42,6 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const GalleryRoute = GalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
@@ -62,7 +56,6 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/gallery': typeof GalleryRoute
-  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/rides': typeof RidesRoute
   '/safety': typeof SafetyRoute
@@ -72,7 +65,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/gallery': typeof GalleryRoute
-  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/rides': typeof RidesRoute
   '/safety': typeof SafetyRoute
@@ -83,7 +75,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/gallery': typeof GalleryRoute
-  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/rides': typeof RidesRoute
   '/safety': typeof SafetyRoute
@@ -93,29 +84,13 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/gallery'
-    | '/login'
-    | '/profile'
-    | '/rides'
-    | '/safety'
-    | '/wallet'
-    | '/wow'
+    '/' | '/gallery' | '/profile' | '/rides' | '/safety' | '/wallet' | '/wow'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/gallery'
-    | '/login'
-    | '/profile'
-    | '/rides'
-    | '/safety'
-    | '/wallet'
-    | '/wow'
+  to: '/' | '/gallery' | '/profile' | '/rides' | '/safety' | '/wallet' | '/wow'
   id:
     | '__root__'
     | '/'
     | '/gallery'
-    | '/login'
     | '/profile'
     | '/rides'
     | '/safety'
@@ -126,7 +101,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GalleryRoute: typeof GalleryRoute
-  LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
   RidesRoute: typeof RidesRoute
   SafetyRoute: typeof SafetyRoute
@@ -171,13 +145,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/gallery': {
       id: '/gallery'
       path: '/gallery'
@@ -198,7 +165,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GalleryRoute: GalleryRoute,
-  LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
   RidesRoute: RidesRoute,
   SafetyRoute: SafetyRoute,

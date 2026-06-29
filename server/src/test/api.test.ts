@@ -144,10 +144,10 @@ async function json(res: Response): Promise<any> {
 }
 
 async function getToken(phone = "+5511999990002"): Promise<string> {
-  const res = await app.request("/auth/login", {
+  const res = await app.request("/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone, otpCode: "999999" }),
+    body: JSON.stringify({ phone }),
   });
   const body = await json(res);
   return body.accessToken as string;
@@ -167,23 +167,12 @@ describe("GET /health", () => {
 
 // ─── /auth ───────────────────────────────────────────────────────────────────
 
-describe("POST /auth/otp-request", () => {
-  it("returns 200 for any phone", async () => {
-    const res = await app.request("/auth/otp-request", {
+describe("POST /auth/register", () => {
+  it("issues JWT for a phone (no OTP)", async () => {
+    const res = await app.request("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: "+5511999990001" }),
-    });
-    expect(res.status).toBe(200);
-  });
-});
-
-describe("POST /auth/login", () => {
-  it("issues JWT for valid 6-digit OTP", async () => {
-    const res = await app.request("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: "+5511999990001", otpCode: "123456" }),
+      body: JSON.stringify({ phone: "+5511999990001", fullName: "Ana" }),
     });
     expect(res.status).toBe(200);
     const body = await json(res);
@@ -192,33 +181,53 @@ describe("POST /auth/login", () => {
     expect(body.user.role).toBe("passenger");
   });
 
-  it("rejects non-6-digit OTP", async () => {
-    const res = await app.request("/auth/login", {
+  it("rejects missing phone", async () => {
+    const res = await app.request("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: "+5511999990001", otpCode: "12345" }),
+      body: JSON.stringify({ fullName: "Sem telefone" }),
     });
     expect(res.status).toBe(400);
   });
 
-  it("auto-creates new user on first login", async () => {
-    const res = await app.request("/auth/login", {
+  it("auto-creates new user on first register (phone-only)", async () => {
+    const res = await app.request("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: "+5599888887777", otpCode: "000000" }),
+      body: JSON.stringify({ phone: "+5599888887777" }),
     });
     expect(res.status).toBe(200);
     const body = await json(res);
     expect(body.user.role).toBe("passenger");
   });
+
+  it("re-registering an existing phone logs into the same account (no profile overwrite)", async () => {
+    const phone = "+5511955554444";
+    const first = await json(
+      await app.request("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, fullName: "Dono Original" }),
+      }),
+    );
+    const second = await json(
+      await app.request("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, fullName: "Tentativa Takeover" }),
+      }),
+    );
+    expect(second.user.id).toBe(first.user.id);
+    expect(second.user.fullName).toBe("Dono Original");
+  });
 });
 
 describe("POST /auth/refresh", () => {
   it("refreshes access token using refresh token", async () => {
-    const loginRes = await app.request("/auth/login", {
+    const loginRes = await app.request("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: "+5511999990001", otpCode: "123456" }),
+      body: JSON.stringify({ phone: "+5511999990001" }),
     });
     const { refreshToken } = await json(loginRes);
 
